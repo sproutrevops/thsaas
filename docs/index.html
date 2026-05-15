@@ -841,7 +841,7 @@
   function getLocalSettings() {
     try {
       const saved = JSON.parse(localStorage.getItem('thsaas_settings') || '{}');
-      return { GOOGLE_SHEETS_ID: DEFAULT_SHEETS_ID, ...saved };
+      return { ...saved, GOOGLE_SHEETS_ID: saved.GOOGLE_SHEETS_ID || DEFAULT_SHEETS_ID };
     } catch { return { GOOGLE_SHEETS_ID: DEFAULT_SHEETS_ID }; }
   }
   function saveLocalSettingsData(data) {
