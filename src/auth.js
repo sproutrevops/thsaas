@@ -14,6 +14,8 @@ function getAuthUrl() {
     access_type: 'offline',
     scope: ['openid', 'email', 'profile'],
     prompt: 'select_account',
+    include_granted_scopes: true,
+    response_type: 'code',
   });
 }
 

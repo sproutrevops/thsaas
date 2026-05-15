@@ -53,6 +53,10 @@ app.get('/auth/google/callback', async (req, res) => {
   }
 });
 
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });

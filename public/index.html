@@ -352,11 +352,11 @@
 
     /* ── Sticky columns ── */
     .col-sticky   { position: sticky; z-index: 2; }
-    .col-sticky-0 { left: 0; }
-    .col-sticky-1 { left: 110px; }
-    .col-sticky-2 { left: 240px; }
-    .col-sticky-3 { left: 340px; }
-    td.col-sticky { background: #fff; box-shadow: 2px 0 6px rgba(0,0,0,0.06); max-width: 160px; }
+    .col-sticky-0 { left: 0;     min-width: 120px; max-width: 120px; width: 120px; }
+    .col-sticky-1 { left: 120px; min-width: 140px; max-width: 140px; width: 140px; }
+    .col-sticky-2 { left: 260px; min-width: 110px; max-width: 110px; width: 110px; }
+    .col-sticky-3 { left: 370px; min-width: 150px; max-width: 150px; width: 150px; }
+    td.col-sticky { background: #fff; box-shadow: 2px 0 6px rgba(0,0,0,0.06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     thead th.col-sticky { z-index: 20; background: #1e293b; }
     thead th.col-sticky:not(.th-group):not(.th-month-grp):not(.th-sub) { background: #f1f5f9; color: var(--text-muted); }
 
@@ -423,6 +423,10 @@
       <span class="nav-icon">📈</span>
       <span class="nav-label">SaaS Metrics</span>
     </div>
+    <div class="nav-item" data-page="company-movement" title="Company Movement">
+      <span class="nav-icon">🏢</span>
+      <span class="nav-label">Company Movement</span>
+    </div>
     <div class="nav-section-label">Data Sources</div>
     <div class="nav-item" data-page="sheets" title="Google Sheets">
       <span class="nav-icon">📊</span>
@@ -465,12 +469,6 @@
 
     <!-- Dashboard -->
     <div id="page-dashboard" class="page active">
-      <div class="dtab-bar">
-        <button id="dtab-overview" class="dtab active" onclick="switchDashTab('overview')">Overview</button>
-        <button id="dtab-overall-movement" class="dtab" onclick="switchDashTab('overall-movement')">Overall Movement</button>
-      </div>
-
-      <!-- Overview sub-page -->
       <div id="dash-tab-overview">
       <div class="stat-grid">
         <div class="stat-card">
@@ -522,12 +520,12 @@
         </div>
       </div>
       </div><!-- /dash-tab-overview -->
+    </div>
 
-      <!-- Overall Movement sub-page -->
-      <div id="dash-tab-overall-movement" style="display:none">
-        <div id="overall-movement-content">
-          <div class="loading-state" style="color:var(--text-muted)">Click the tab to load.</div>
-        </div>
+    <!-- Company Movement -->
+    <div id="page-company-movement" class="page">
+      <div id="overall-movement-content">
+        <div class="loading-state" style="color:var(--text-muted)">Loading…</div>
       </div>
     </div>
 
@@ -737,7 +735,7 @@
   };
 
   // ── Navigation ──
-  const pageTitles = { dashboard: 'Dashboard', sheets: 'Google Sheets', hubspot: 'HubSpot CRM', ppm: 'Per Product Movement', 'saas-metrics': 'SaaS Metrics Movement', settings: 'Settings' };
+  const pageTitles = { dashboard: 'Dashboard', sheets: 'Google Sheets', hubspot: 'HubSpot CRM', ppm: 'Per Product Movement', 'saas-metrics': 'SaaS Metrics Movement', 'company-movement': 'Company Movement', settings: 'Settings' };
 
   function navigateTo(page) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -748,10 +746,11 @@
 
     if (page === 'sheets')        loadSheetTabs();
     if (page === 'hubspot' && !state.hubspotData) loadHubSpot();
-    if (page === 'ppm')           loadPPMSheetList();
-    if (page === 'saas-metrics')  loadSaasMetrics();
-    if (page === 'settings')      { loadSettings(); testConnections(); }
-    if (page === 'dashboard')     refreshDashboard();
+    if (page === 'ppm')               loadPPMSheetList();
+    if (page === 'saas-metrics')      loadSaasMetrics();
+    if (page === 'company-movement')  loadCompanyMovement();
+    if (page === 'settings')          { loadSettings(); testConnections(); }
+    if (page === 'dashboard')         refreshDashboard();
   }
 
   document.querySelectorAll('.nav-item').forEach(el => {
@@ -1439,9 +1438,10 @@
       let tds = baseCols.map((h, i) => {
         const val = esc(row[h] ?? '');
         let cls = '';
-        if (h === cp) cls = 'col-partner col-sticky col-sticky-0';
-        else if (h === cc) cls = 'col-client col-sticky col-sticky-1';
-        else if (h === ca) cls = 'col-app col-sticky col-sticky-3';
+        if (h === cp)  cls = 'col-partner col-sticky col-sticky-0';
+        else if (h === cc)  cls = 'col-client col-sticky col-sticky-1';
+        else if (h === cpd) cls = 'col-sticky col-sticky-2';
+        else if (h === ca)  cls = 'col-app col-sticky col-sticky-3';
         return `<td class="${cls}" title="${val}">${val}</td>`;
       }).join('');
 
@@ -1488,14 +1488,8 @@
     }
   }
 
-  // ── Dashboard tabs ──
-  function switchDashTab(tab) {
-    ['overview', 'overall-movement'].forEach(t => {
-      document.getElementById(`dash-tab-${t}`).style.display = t === tab ? '' : 'none';
-      document.getElementById(`dtab-${t}`).classList.toggle('active', t === tab);
-    });
-    if (tab !== 'overall-movement') return;
-
+  // ── Company Movement ──
+  function loadCompanyMovement() {
     if (ppm.rawData.length && ppm.hcPeriodCols.length) {
       renderOverallMovement();
     } else {
@@ -1887,15 +1881,11 @@
         const wasActive = hcPrev > 0;
         const isActive  = hcCurr > 0;
 
-        // Lost: active in prevPeriod, gone in currPeriod (by HC drop or termination in prev period)
-        const lostByHC   = wasActive && !isActive;
-        const lostByTerm = !lostByHC && wasActive && client.termYM && ymMatch(client.termYM, prevPeriod);
-        const isLost     = lostByHC || lostByTerm;
+        // Lost: was active last period, HC dropped to 0 this period
+        const isLost = wasActive && !isActive;
 
-        // New business: start date falls in currPeriod; fallback to first-ever activity
-        const isNew = client.startYM
-          ? ymMatch(client.startYM, currPeriod)
-          : (!wasActive && isActive);
+        // New business: had no HC activity last period, has it now
+        const isNew = !wasActive && isActive;
 
         if (isLost) {
           // Use last known non-zero MRR
