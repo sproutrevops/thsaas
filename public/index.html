@@ -1,0 +1,2103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TH SAAS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --sidebar-active: rgba(59,130,246,0.15);
+      --sidebar-width: 228px;
+      --sidebar-min: 56px;
+      --primary: #2563eb;
+      --primary-50: #eff6ff;
+      --primary-100: #dbeafe;
+      --success: #16a34a;
+      --success-50: #f0fdf4;
+      --success-100: #dcfce7;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --radius: 10px;
+      --radius-sm: 7px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 8px rgba(0,0,0,0.08),0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; min-height: 100vh; font-size: 14px; line-height: 1.5;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-width); background: var(--sidebar-bg);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.18);
+      transition: width .22s ease; overflow: hidden;
+    }
+    .sidebar-logo {
+      padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; gap: 10px; height: 54px;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .logo-mark {
+      width: 30px; height: 30px; background: var(--primary); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .logo-text { overflow: hidden; white-space: nowrap; }
+    .logo-text h2 { color: #fff; font-size: 13.5px; font-weight: 800; letter-spacing: -.3px; }
+    .logo-text span { font-size: 10px; color: #4b5563; display: block; margin-top: 1px; }
+    .sidebar-nav { flex: 1; padding: 6px 0; overflow-y: auto; overflow-x: hidden; }
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+    .nav-section-label {
+      font-size: 9.5px; font-weight: 700; color: #374151;
+      text-transform: uppercase; letter-spacing: 1.2px;
+      padding: 14px 16px 4px; white-space: nowrap; overflow: hidden;
+      transition: opacity .15s;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; cursor: pointer; color: #9ca3af;
+      font-size: 12.5px; font-weight: 500; user-select: none;
+      transition: background .12s, color .12s; position: relative;
+      white-space: nowrap; overflow: hidden;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: #d1d5db; }
+    .nav-item.active { background: var(--sidebar-active); color: #93c5fd; }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 5px; bottom: 5px;
+      width: 3px; background: #3b82f6; border-radius: 0 3px 3px 0;
+    }
+    .nav-icon { width: 22px; text-align: center; font-size: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .nav-label { flex: 1; transition: opacity .15s; }
+    .sidebar-footer { padding: 11px 14px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10.5px; color: #374151; overflow: hidden; white-space: nowrap; transition: opacity .15s; }
+
+    /* ── Collapsed sidebar ── */
+    body.sb-collapsed #sidebar { width: var(--sidebar-min); }
+    body.sb-collapsed #main { margin-left: var(--sidebar-min); }
+    body.sb-collapsed .nav-section-label { opacity: 0; height: 0; padding: 0; pointer-events: none; }
+    body.sb-collapsed .nav-label { display: none; }
+    body.sb-collapsed .logo-text { display: none; }
+    body.sb-collapsed .sidebar-footer { display: none; }
+    body.sb-collapsed .nav-item { padding: 10px 0; justify-content: center; gap: 0; }
+    body.sb-collapsed .nav-item.active::before { top: 8px; bottom: 8px; }
+    body.sb-collapsed .nav-item[title]:hover::after {
+      content: attr(title); position: absolute; left: calc(var(--sidebar-min) + 6px);
+      background: #1e293b; color: #e2e8f0; padding: 4px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 500; white-space: nowrap; z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* ── Main ── */
+    #main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left .22s ease; }
+    .topbar {
+      background: var(--card-bg); border-bottom: 1px solid var(--border);
+      padding: 0 18px; height: 54px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); gap: 10px;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .menu-btn {
+      width: 32px; height: 32px; border: 1.5px solid var(--border); background: var(--bg);
+      border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 15px; color: var(--text-muted); flex-shrink: 0;
+      transition: all .15s; padding: 0;
+    }
+    .menu-btn:hover { background: var(--border); color: var(--text); }
+    .topbar-title { font-size: 14.5px; font-weight: 700; color: var(--text); letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-success { background: var(--success-50); color: var(--success); }
+    .badge-warning { background: var(--warning-light); color: var(--warning); }
+    .badge-danger  { background: var(--danger-light); color: var(--danger); }
+    .content { padding: 18px 20px; flex: 1; }
+
+    /* ── Cards ── */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header {
+      padding: 11px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; background: #fafafa;
+    }
+    .card-header h3 { font-size: 13px; font-weight: 600; }
+    .card-body { padding: 16px; }
+
+    /* ── Stat cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(165px,1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 15px 17px; box-shadow: var(--shadow); transition: box-shadow .2s, transform .15s;
+    }
+    .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .stat-card .label { font-size: 10.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+    .stat-card .value { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat-card .sub   { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.4; }
+    .stat-card .icon-wrap { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-bottom: 10px; }
+    .icon-wrap-blue   { background: var(--primary-50); }
+    .icon-wrap-green  { background: var(--success-50); }
+    .icon-wrap-orange { background: var(--warning-light); }
+
+    /* ── Tables ── */
+    .table-wrap { overflow: auto; max-height: calc(100vh - 195px); border-radius: var(--radius); }
+    table { border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+    thead th {
+      position: sticky; top: 0; z-index: 10; white-space: nowrap;
+      text-align: left; padding: 9px 11px; font-weight: 600; font-size: 11.5px;
+      background: #f1f5f9; color: var(--text-muted);
+      border-bottom: 1px solid #d1d5db;
+    }
+    tbody tr { transition: background .1s; }
+    tbody tr:not(.group-header-partner):hover { background: #f0f7ff; }
+    tbody td {
+      padding: 8px 11px; color: var(--text);
+      border-bottom: 1px solid #f1f5f9;
+      line-height: 1.45; vertical-align: top;
+      word-break: break-word;
+    }
+    .empty-state { text-align: center; padding: 56px 20px; color: var(--text-muted); }
+    .empty-state .empty-icon { font-size: 36px; margin-bottom: 11px; }
+    .empty-state p { font-size: 13.5px; line-height: 1.6; }
+
+    /* ── Sheet tabs ── */
+    .sheet-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+    .tab-btn {
+      padding: 5px 13px; border-radius: 6px; border: 1px solid var(--border);
+      background: #fff; color: var(--text-muted); font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all .15s; white-space: nowrap; font-family: inherit;
+    }
+    .tab-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-50); }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 1px 3px rgba(37,99,235,.3); }
+    .tab-loading { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .form-group .hint { font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; color: var(--text); background: #fff;
+      transition: border-color .15s, box-shadow .15s; outline: none; font-family: inherit;
+    }
+    .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px;
+      border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 600; cursor: pointer;
+      border: none; transition: all .15s; font-family: inherit; white-space: nowrap;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary  { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(37,99,235,.25); }
+    .btn-primary:hover:not(:disabled)  { background: #1d4ed8; box-shadow: 0 2px 5px rgba(37,99,235,.3); }
+    .btn-secondary { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+    .btn-secondary:hover:not(:disabled) { background: var(--bg); border-color: #9ca3af; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover:not(:disabled) { background: #15803d; }
+    .btn-sm { padding: 5px 10px; font-size: 11.5px; }
+
+    /* ── Alerts ── */
+    .alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 13px; display: flex; align-items: center; gap: 8px; font-weight: 500; }
+    .alert-success { background: var(--success-50); color: var(--success); border: 1px solid #bbf7d0; }
+    .alert-danger  { background: var(--danger-light); color: var(--danger); border: 1px solid #fecaca; }
+    .alert-warning { background: var(--warning-light); color: var(--warning); border: 1px solid #fde68a; }
+
+    /* ── Misc ── */
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .dot-green  { background: var(--success); }
+    .dot-red    { background: var(--danger); }
+    .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-state { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 60px; color: var(--text-muted); font-size: 13px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+    /* ── Connection cards ── */
+    .connection-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 12px; margin-bottom: 16px; }
+    .connection-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 12px; }
+    .conn-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    .conn-details h4 { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .conn-details p  { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+
+    /* ── Settings ── */
+    .settings-section { margin-bottom: 20px; }
+    .settings-section h3 { font-size: 13.5px; font-weight: 600; margin-bottom: 4px; }
+    .settings-section .desc { font-size: 12px; color: var(--text-muted); margin-bottom: 13px; line-height: 1.5; }
+    .url-parsed { font-size: 11px; color: var(--success); margin-top: 4px; display: none; }
+    .password-wrap { position: relative; }
+    .password-wrap input { padding-right: 40px; }
+    .toggle-pw { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 2px; }
+
+    /* ── Dashboard tabs ── */
+    .dtab-bar { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 18px; }
+    .dtab {
+      padding: 9px 20px; border: none; background: none; cursor: pointer;
+      font-size: 13px; font-weight: 600; color: var(--text-muted);
+      border-bottom: 2px solid transparent; margin-bottom: -2px;
+      transition: color .15s; font-family: inherit;
+    }
+    .dtab:hover { color: var(--text); }
+    .dtab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* ── Overall Movement totals row ── */
+    .om-totals-row td {
+      background: #fef3c7 !important; font-weight: 700 !important;
+      color: #92400e !important; font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+
+    /* ── PPM Config ── */
+    .ppm-config-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 12px 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+    }
+    .ppm-config-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+    .ppm-config-row + .ppm-config-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .cfg-group { display: flex; flex-direction: column; gap: 3px; }
+    .cfg-group label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .cfg-group select {
+      padding: 6px 8px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 12px; color: var(--text); background: #fff; outline: none; cursor: pointer;
+      min-width: 118px; font-family: inherit; transition: border-color .15s;
+    }
+    .cfg-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .cfg-actions { display: flex; gap: 7px; align-items: flex-end; margin-left: auto; }
+
+    /* ── PPM status bar ── */
+    .ppm-status-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 0 0 8px; }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid;
+    }
+    .pill-green { background: var(--success-50); color: var(--success); border-color: #bbf7d0; }
+    .pill-amber { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .pill-muted { background: var(--bg); color: var(--text-muted); border-color: var(--border); }
+    .pill-red   { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+
+    /* ── PPM filter bar ── */
+    .ppm-filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 14px; box-shadow: var(--shadow);
+    }
+    .ppm-filter-bar select, .ppm-filter-bar input {
+      padding: 6px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 12px; color: var(--text); background: #fff; outline: none; font-family: inherit;
+    }
+    .ppm-filter-bar select:focus, .ppm-filter-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+    /* ── PPM stats ── */
+    .ppm-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .ppm-stat { background: var(--card-bg); border: 1px solid var(--border); border-radius: 9px; padding: 9px 14px; box-shadow: var(--shadow); text-align: center; min-width: 80px; }
+    .ppm-stat .n { font-size: 20px; font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .ppm-stat .l { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+    /* ── Group header rows ── */
+    .group-header-partner td {
+      background: #f1f5f9; color: #374151; font-weight: 700; font-size: 12px;
+      padding: 6px 12px; border-top: 2px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+      letter-spacing: .1px; white-space: nowrap;
+    }
+
+    /* ── Data column styles ── */
+    .col-partner { color: var(--primary); font-weight: 600; }
+    .col-client  { color: var(--text); font-weight: 500; }
+    .col-app     { font-weight: 600; color: var(--text); }
+    .col-mrr     { color: var(--success); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* ── Month number cells ── */
+    td.col-hc.th-month { background: #eff6ff; color: #1d4ed8; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    td.col-mrr.th-mrr-month { background: #f0fdf4; color: #15803d; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* ── Month column sizing ── */
+    .th-month     { width: 52px; min-width: 52px; max-width: 52px; padding: 4px 3px !important; font-size: 12px; text-align: center; white-space: nowrap; }
+    td.th-month   { padding: 6px 3px !important; font-size: 13px; white-space: nowrap; }
+    .th-mrr-month { width: 110px; min-width: 110px; max-width: 110px; padding: 4px 6px !important; font-size: 12px; text-align: right; white-space: nowrap; }
+    td.th-mrr-month { padding: 6px 8px !important; font-size: 13px; max-width: 110px; white-space: nowrap; }
+
+    /* ── Table header tiers ── */
+    thead th.th-group {
+      background: #1e293b; color: #e2e8f0; text-align: center;
+      font-size: 12px; font-weight: 700; letter-spacing: .4px; padding: 7px 8px;
+      border-bottom: 1px solid #334155;
+    }
+    .th-month-grp {
+      background: #334155; color: #cbd5e1; text-align: center;
+      font-size: 11px; font-weight: 700; padding: 4px 3px !important;
+      border-left: 1px solid #475569;
+    }
+    thead th.th-sub {
+      background: #475569; color: #e2e8f0; font-size: 10.5px; font-weight: 700;
+      text-align: center; padding: 4px 4px; border-bottom: 2px solid #1e293b;
+    }
+
+    /* ── Sticky columns ── */
+    .col-sticky   { position: sticky; z-index: 2; }
+    .col-sticky-0 { left: 0; }
+    .col-sticky-1 { left: 110px; }
+    .col-sticky-2 { left: 240px; }
+    .col-sticky-3 { left: 340px; }
+    td.col-sticky { background: #fff; box-shadow: 2px 0 6px rgba(0,0,0,0.06); max-width: 160px; }
+    thead th.col-sticky { z-index: 20; background: #1e293b; }
+    thead th.col-sticky:not(.th-group):not(.th-month-grp):not(.th-sub) { background: #f1f5f9; color: var(--text-muted); }
+
+    td.align-right { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* ── SaaS Metrics ── */
+    .sm-metric-label {
+      font-size: 12.5px; font-weight: 600; min-width: 170px; white-space: nowrap;
+      padding: 9px 14px; position: sticky; left: 0; z-index: 2;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.06);
+    }
+    .sm-val { text-align: right; font-variant-numeric: tabular-nums; padding: 9px 14px; font-size: 12.5px; min-width: 130px; white-space: nowrap; }
+    .sm-row-beginning td { background: #eff6ff; }
+    .sm-row-beginning .sm-metric-label { color: var(--primary); background: #eff6ff !important; }
+    .sm-row-beginning .sm-val { color: #1d4ed8; font-weight: 700; }
+    .sm-row-new td { background: #f0fdf4; }
+    .sm-row-new .sm-metric-label { color: var(--success); background: #f0fdf4 !important; }
+    .sm-row-new .sm-val { color: #15803d; font-weight: 600; }
+    .sm-row-upsell td { background: #fafafa; }
+    .sm-row-upsell .sm-metric-label { color: var(--text-muted); background: #fafafa !important; }
+    .sm-row-upsell .sm-val { color: var(--text-muted); }
+    .sm-row-contraction td { background: #fef2f2; }
+    .sm-row-contraction .sm-metric-label { color: var(--danger); background: #fef2f2 !important; }
+    .sm-row-contraction .sm-val { color: #b91c1c; font-weight: 600; }
+    .sm-row-expansion td { background: #f0fdf4; }
+    .sm-row-expansion .sm-metric-label { color: var(--success); background: #f0fdf4 !important; }
+    .sm-row-expansion .sm-val { color: #15803d; font-weight: 600; }
+    .sm-row-lost td { background: #fef2f2; }
+    .sm-row-lost .sm-metric-label { color: var(--danger); background: #fef2f2 !important; }
+    .sm-row-lost .sm-val { color: #b91c1c; font-weight: 600; }
+    .sm-row-ending td { background: #1e293b; }
+    .sm-row-ending .sm-metric-label { color: #f8fafc; font-weight: 800; font-size: 13px; background: #1e293b !important; }
+    .sm-row-ending .sm-val { color: #f8fafc; font-weight: 800; font-size: 13px; }
+    .sm-divider td { height: 2px; background: #e2e8f0; padding: 0; }
+    .sm-header-label { position: sticky; left: 0; z-index: 22; background: #1e293b; color: #e2e8f0; min-width: 170px; }
+    .sm-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .sm-stat { background: var(--card-bg); border: 1px solid var(--border); border-radius: 9px; padding: 10px 15px; box-shadow: var(--shadow); min-width: 135px; }
+    .sm-stat .n { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sm-stat .l { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">T</div>
+    <div class="logo-text">
+      <h2>TH SAAS</h2>
+      <span>Data Platform</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" data-page="dashboard" title="Dashboard">
+      <span class="nav-icon">▣</span>
+      <span class="nav-label">Dashboard</span>
+    </div>
+    <div class="nav-item" data-page="ppm" title="Per Product Movement">
+      <span class="nav-icon">📦</span>
+      <span class="nav-label">Per Product Movement</span>
+    </div>
+    <div class="nav-item" data-page="saas-metrics" title="SaaS Metrics">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">SaaS Metrics</span>
+    </div>
+    <div class="nav-section-label">Data Sources</div>
+    <div class="nav-item" data-page="sheets" title="Google Sheets">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Google Sheets</span>
+    </div>
+    <div class="nav-item" data-page="hubspot" title="HubSpot CRM">
+      <span class="nav-icon">🔶</span>
+      <span class="nav-label">HubSpot</span>
+    </div>
+    <div class="nav-section-label">System</div>
+    <div class="nav-item" data-page="settings" title="Settings">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Settings</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <span id="server-status-text">● Connecting…</span>
+  </div>
+</aside>
+
+<!-- Main -->
+<div id="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+      <div class="topbar-title" id="page-title">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <span id="sheets-badge" class="badge badge-warning">● Sheets</span>
+      <span id="hubspot-badge" class="badge badge-warning">● HubSpot</span>
+      <div id="user-info" style="display:none;align-items:center;gap:8px;margin-left:4px;padding-left:10px;border-left:1px solid var(--border)">
+        <img id="user-avatar" src="" alt="" width="26" height="26" style="border-radius:50%;display:none">
+        <span id="user-name" style="font-size:12px;font-weight:600;color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        <a href="/logout" style="font-size:11.5px;color:var(--danger);font-weight:600;text-decoration:none;padding:3px 8px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2">Sign out</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="dtab-bar">
+        <button id="dtab-overview" class="dtab active" onclick="switchDashTab('overview')">Overview</button>
+        <button id="dtab-overall-movement" class="dtab" onclick="switchDashTab('overall-movement')">Overall Movement</button>
+      </div>
+
+      <!-- Overview sub-page -->
+      <div id="dash-tab-overview">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="icon-wrap icon-wrap-blue">📊</div>
+          <div class="label">Sheet Tabs</div>
+          <div class="value" id="stat-sheets">—</div>
+          <div class="sub" id="stat-sheets-sub">Not connected</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon-wrap icon-wrap-orange">🔶</div>
+          <div class="label">HubSpot Companies</div>
+          <div class="value" id="stat-hubspot">—</div>
+          <div class="sub" id="stat-hubspot-sub">Not connected</div>
+        </div>
+        <div class="stat-card">
+          <div class="icon-wrap icon-wrap-green">✅</div>
+          <div class="label">Server Status</div>
+          <div class="value" style="font-size:18px;margin-top:4px" id="stat-server">Checking…</div>
+          <div class="sub" id="stat-server-sub">—</div>
+        </div>
+      </div>
+
+      <div class="connection-grid">
+        <div class="connection-card">
+          <div class="conn-icon" style="background:#eff6ff">📊</div>
+          <div class="conn-details">
+            <h4>Google Sheets</h4>
+            <p id="conn-sheets-desc">Configure your Sheets ID in Settings to begin.</p>
+            <span id="conn-sheets-status" class="badge badge-warning">Not configured</span>
+          </div>
+        </div>
+        <div class="connection-card">
+          <div class="conn-icon" style="background:#fff7ed">🔶</div>
+          <div class="conn-details">
+            <h4>HubSpot CRM</h4>
+            <p id="conn-hubspot-desc">Configure your HubSpot token in Settings to begin.</p>
+            <span id="conn-hubspot-status" class="badge badge-warning">Not configured</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Quick Actions</h3></div>
+        <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="navigateTo('sheets')">📊 View Sheets Data</button>
+          <button class="btn btn-primary" onclick="navigateTo('hubspot')">🔶 View HubSpot Data</button>
+          <button class="btn btn-secondary" onclick="navigateTo('settings')">⚙️ Configure Settings</button>
+          <button class="btn btn-secondary" onclick="refreshDashboard()">↻ Refresh</button>
+        </div>
+      </div>
+      </div><!-- /dash-tab-overview -->
+
+      <!-- Overall Movement sub-page -->
+      <div id="dash-tab-overall-movement" style="display:none">
+        <div id="overall-movement-content">
+          <div class="loading-state" style="color:var(--text-muted)">Click the tab to load.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Google Sheets -->
+    <div id="page-sheets" class="page">
+      <div class="toolbar">
+        <button class="btn btn-secondary btn-sm" onclick="loadSheetTabs()">↻ Reload Tabs</button>
+        <button class="btn btn-secondary btn-sm" onclick="navigateTo('settings')">⚙️ Settings</button>
+        <span id="sheets-count-label" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+      </div>
+      <div class="card">
+        <div id="sheets-tabs-bar" class="sheet-tabs">
+          <span class="tab-loading"><span class="loader"></span> Loading sheets…</span>
+        </div>
+        <div id="sheets-content">
+          <div class="loading-state"><div class="loader"></div> Select a tab above to load data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HubSpot -->
+    <div id="page-hubspot" class="page">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="loadHubSpot()">↻ Refresh</button>
+        <button class="btn btn-secondary" onclick="navigateTo('settings')">⚙️ Settings</button>
+        <span id="hubspot-count-label" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+      </div>
+      <div class="card">
+        <div id="hubspot-content">
+          <div class="loading-state"><div class="loader"></div> Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per Product Movement -->
+    <div id="page-ppm" class="page">
+
+      <!-- Config: sheet + column mapping -->
+      <div class="ppm-config-card">
+        <div class="ppm-config-row">
+          <div class="cfg-group">
+            <label>PPM Sheet</label>
+            <select id="ppm-sheet-select"><option value="">— select sheet —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>HC Sheet</label>
+            <select id="hc-sheet-select" onchange="loadHCData()"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>Unit Price Sheet</label>
+            <select id="up-sheet-select" onchange="loadUPData()"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-actions">
+            <button class="btn btn-primary btn-sm" onclick="loadPPM()">▶ Load</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadPPMSheetList()">↻ Reload Tabs</button>
+          </div>
+        </div>
+        <div class="ppm-config-row">
+          <div class="cfg-group">
+            <label>Partner Col</label>
+            <select id="ppm-col-partner"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>Client Name Col</label>
+            <select id="ppm-col-client"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>Product Col</label>
+            <select id="ppm-col-product"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>Application Col</label>
+            <select id="ppm-col-app"><option value="">— auto —</option></select>
+          </div>
+          <div class="cfg-group">
+            <label>MRR Col</label>
+            <select id="ppm-col-mrr"><option value="">— auto —</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="ppm-status-bar">
+        <span id="hc-status" class="status-pill pill-muted" style="display:none"></span>
+        <span id="up-status" class="status-pill pill-muted" style="display:none"></span>
+      </div>
+
+      <!-- Filters -->
+      <div class="ppm-filter-bar">
+        <select id="ppm-filter-partner" style="min-width:150px">
+          <option value="">All Partners</option>
+        </select>
+        <select id="ppm-filter-client" style="min-width:150px">
+          <option value="">All Clients</option>
+        </select>
+        <input type="text" id="ppm-search" placeholder="Search application…" style="width:180px" />
+        <button class="btn btn-secondary btn-sm" onclick="renderPPM()">Apply</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearPPMFilters()">✕ Clear</button>
+        <span id="ppm-count-label" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
+      </div>
+
+      <!-- Stats -->
+      <div class="ppm-stats" id="ppm-stats"></div>
+
+      <!-- Table -->
+      <div class="card" id="ppm-card">
+        <div id="ppm-content">
+          <div class="loading-state" style="color:var(--text-muted)">Select a sheet and click Load.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SaaS Metrics -->
+    <div id="page-saas-metrics" class="page">
+      <div class="toolbar">
+        <button class="btn btn-secondary btn-sm" onclick="loadSaasMetrics()">↻ Refresh</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadSaasMetricsCSV()">⬇ Download CSV</button>
+      </div>
+      <div id="sm-stats-bar" class="sm-stats"></div>
+      <div id="saas-metrics-content">
+        <div class="loading-state" style="color:var(--text-muted)">Click ↻ Refresh to load data, or visit <strong>Per Product Movement</strong> first.</div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="page-settings" class="page">
+      <div id="settings-alert"></div>
+
+      <div class="card" style="max-width:640px">
+        <div class="card-header"><h3>Google Sheets Configuration</h3></div>
+        <div class="card-body">
+          <div class="settings-section">
+            <div class="desc">
+              Paste your Google Sheets <strong>URL</strong> or just the <strong>Spreadsheet ID</strong>.<br>
+              The ID is the part between <code>/d/</code> and <code>/edit</code> in the URL.
+            </div>
+            <div class="form-group">
+              <label>Spreadsheet URL or ID</label>
+              <input type="text" id="setting-sheets-id"
+                placeholder="https://docs.google.com/spreadsheets/d/… or just the ID" />
+              <div class="url-parsed" id="url-parsed-hint"></div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="settings-section">
+            <h3>HubSpot Configuration</h3>
+            <div class="desc" style="margin-top:4px">
+              Provide your HubSpot Private App token.<br>
+              Create one at: HubSpot → Settings → Integrations → Private Apps.
+            </div>
+            <div class="form-group">
+              <label>HubSpot Access Token</label>
+              <div class="password-wrap">
+                <input type="password" id="setting-hubspot-token"
+                  placeholder="pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                <button class="toggle-pw" onclick="togglePw()" title="Show/hide">👁</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center">
+            <button class="btn btn-primary" onclick="saveSettings()" id="save-btn">Save Settings</button>
+            <button class="btn btn-secondary" onclick="loadSettings()">↩ Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:640px;margin-top:16px">
+        <div class="card-header"><h3>Connection Status</h3></div>
+        <div class="card-body">
+          <table>
+            <thead><tr><th>Service</th><th>Status</th><th>Detail</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Google Sheets</td>
+                <td id="status-sheets-cell">—</td>
+                <td id="status-sheets-detail">—</td>
+              </tr>
+              <tr>
+                <td>HubSpot CRM</td>
+                <td id="status-hubspot-cell">—</td>
+                <td id="status-hubspot-detail">—</td>
+              </tr>
+              <tr>
+                <td>Server</td>
+                <td id="status-server-cell">—</td>
+                <td id="status-server-detail">—</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:12px">
+            <button class="btn btn-secondary btn-sm" onclick="testConnections()">Test Connections</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const state = {
+    settings: {},
+    hubspotData: null,
+    activeSheet: null,
+    sheetTabs: [],
+  };
+
+  // ── Navigation ──
+  const pageTitles = { dashboard: 'Dashboard', sheets: 'Google Sheets', hubspot: 'HubSpot CRM', ppm: 'Per Product Movement', 'saas-metrics': 'SaaS Metrics Movement', settings: 'Settings' };
+
+  function navigateTo(page) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+    document.querySelector(`[data-page="${page}"]`).classList.add('active');
+    document.getElementById(`page-${page}`).classList.add('active');
+    document.getElementById('page-title').textContent = pageTitles[page];
+
+    if (page === 'sheets')        loadSheetTabs();
+    if (page === 'hubspot' && !state.hubspotData) loadHubSpot();
+    if (page === 'ppm')           loadPPMSheetList();
+    if (page === 'saas-metrics')  loadSaasMetrics();
+    if (page === 'settings')      { loadSettings(); testConnections(); }
+    if (page === 'dashboard')     refreshDashboard();
+  }
+
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', () => navigateTo(el.dataset.page));
+  });
+
+  // ── API ──
+  async function apiFetch(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { const j = await res.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
+
+  // ── Sheet tabs ──
+  async function loadSheetTabs() {
+    const bar = document.getElementById('sheets-tabs-bar');
+    bar.innerHTML = '<span class="tab-loading"><span class="loader"></span> Loading sheet tabs…</span>';
+    document.getElementById('sheets-count-label').textContent = '';
+
+    try {
+      const { tabs } = await apiFetch('/api/sheets/tabs');
+      state.sheetTabs = tabs;
+
+      if (tabs.length === 0) {
+        bar.innerHTML = '<span style="color:var(--text-muted);font-size:13px">No sheets found.</span>';
+        return;
+      }
+
+      bar.innerHTML = tabs.map((tab, i) =>
+        `<button class="tab-btn${i === 0 ? ' active' : ''}" data-index="${i}">${esc(tab.title)}</button>`
+      ).join('');
+
+      bar.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tab = state.sheetTabs[+btn.dataset.index];
+          if (tab) selectTab(btn, tab.title);
+        });
+      });
+
+      // Auto-load first tab
+      selectTab(bar.querySelector('.tab-btn'), tabs[0].title);
+    } catch (e) {
+      bar.innerHTML = `<span style="color:var(--danger);font-size:13px">⚠ ${e.message} — check your Sheets ID in Settings.</span>`;
+      document.getElementById('sheets-content').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${e.message}</p><p style="margin-top:8px;font-size:12px">Go to Settings and verify your Spreadsheet ID.</p></div>`;
+    }
+  }
+
+  function selectTab(btn, title) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.activeSheet = title;
+    loadSheets(title);
+  }
+
+  // ── Sheets data ──
+  async function loadSheets(range) {
+    range = range || state.activeSheet || 'Sheet1';
+    const el = document.getElementById('sheets-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Fetching data…</div>';
+    document.getElementById('sheets-count-label').textContent = '';
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(range)}`);
+      document.getElementById('sheets-count-label').textContent = `${data.count} row${data.count !== 1 ? 's' : ''} in "${range}"`;
+      el.innerHTML = renderTable(data.records, `No data found in "${range}".`);
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${e.message}</p></div>`;
+    }
+  }
+
+  // ── HubSpot ──
+  async function loadHubSpot() {
+    const el = document.getElementById('hubspot-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Fetching HubSpot data…</div>';
+    document.getElementById('hubspot-count-label').textContent = '';
+    try {
+      const data = await apiFetch('/api/hubspot');
+      state.hubspotData = data;
+      document.getElementById('hubspot-count-label').textContent = `${data.count} records`;
+      el.innerHTML = renderTable(data.records, 'No companies found in HubSpot.');
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${e.message}</p><p style="margin-top:8px;font-size:12px">Check your HubSpot token in Settings.</p></div>`;
+    }
+  }
+
+  // ── Table renderer ──
+  function renderTable(records, emptyMsg) {
+    if (!records || records.length === 0) {
+      return `<div class="empty-state"><div class="empty-icon">📭</div><p>${emptyMsg || 'No records found.'}</p></div>`;
+    }
+    const headers = Object.keys(records[0]);
+    const ths = headers.map(h => `<th>${esc(h)}</th>`).join('');
+    const trs = records.map(row =>
+      `<tr>${headers.map(h => `<td title="${esc(row[h] ?? '')}">${esc(row[h] ?? '')}</td>`).join('')}</tr>`
+    ).join('');
+    return `<div class="table-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Settings ──
+  function extractSheetId(val) {
+    val = val.trim();
+    const m = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    return m ? m[1] : val;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const inp = document.getElementById('setting-sheets-id');
+    const hint = document.getElementById('url-parsed-hint');
+    inp.addEventListener('input', () => {
+      const val = inp.value.trim();
+      const m = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (m) {
+        hint.textContent = `✓ ID extracted: ${m[1]}`;
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+      }
+    });
+  });
+
+  async function loadSettings() {
+    try {
+      const data = await apiFetch('/api/settings');
+      state.settings = data;
+      document.getElementById('setting-sheets-id').value = data.GOOGLE_SHEETS_ID || '';
+      document.getElementById('setting-hubspot-token').value = data.HUBSPOT_ACCESS_TOKEN || '';
+      document.getElementById('url-parsed-hint').style.display = 'none';
+    } catch (e) {
+      showAlert('settings', 'danger', 'Failed to load settings: ' + e.message);
+    }
+  }
+
+  async function saveSettings() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      const rawId = document.getElementById('setting-sheets-id').value.trim();
+      const body = {
+        GOOGLE_SHEETS_ID: extractSheetId(rawId),
+        HUBSPOT_ACCESS_TOKEN: document.getElementById('setting-hubspot-token').value.trim(),
+      };
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showAlert('settings', 'success', '✓ Settings saved successfully.');
+      state.hubspotData = null;
+      state.sheetTabs = [];
+      state.activeSheet = null;
+      await loadSettings();
+      await testConnections();
+    } catch (e) {
+      showAlert('settings', 'danger', 'Failed to save: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Settings';
+    }
+  }
+
+  function togglePw() {
+    const inp = document.getElementById('setting-hubspot-token');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function showAlert(page, type, msg) {
+    const el = document.getElementById(`${page}-alert`);
+    if (!el) return;
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    if (type === 'success') setTimeout(() => { el.innerHTML = ''; }, 4000);
+  }
+
+  // ── Dashboard ──
+  async function refreshDashboard() {
+    updateBadges();
+    try {
+      const h = await apiFetch('/api/health');
+      document.getElementById('stat-server').textContent = 'Online';
+      document.getElementById('stat-server').style.color = 'var(--success)';
+      document.getElementById('stat-server-sub').textContent = new Date(h.timestamp).toLocaleTimeString();
+      document.getElementById('server-status-text').textContent = '● Online';
+      document.getElementById('server-status-text').style.color = '#4ade80';
+    } catch {
+      document.getElementById('stat-server').textContent = 'Offline';
+      document.getElementById('stat-server').style.color = 'var(--danger)';
+    }
+
+    try {
+      const s = await apiFetch('/api/settings');
+      state.settings = s;
+      updateBadges();
+
+      if (s.hasGoogleSheets) {
+        try {
+          const { tabs } = await apiFetch('/api/sheets/tabs');
+          document.getElementById('stat-sheets').textContent = tabs.length;
+          document.getElementById('stat-sheets-sub').textContent = tabs.map(t => t.title).join(', ').slice(0, 60);
+          document.getElementById('conn-sheets-desc').textContent = `${tabs.length} sheet${tabs.length !== 1 ? 's' : ''} found`;
+          document.getElementById('conn-sheets-status').className = 'badge badge-success';
+          document.getElementById('conn-sheets-status').textContent = '● Connected';
+        } catch (e) {
+          document.getElementById('stat-sheets').textContent = 'Error';
+          document.getElementById('stat-sheets-sub').textContent = e.message;
+          document.getElementById('conn-sheets-status').className = 'badge badge-danger';
+          document.getElementById('conn-sheets-status').textContent = '● Error';
+        }
+      } else {
+        document.getElementById('stat-sheets').textContent = '—';
+        document.getElementById('stat-sheets-sub').textContent = 'Not configured';
+      }
+
+      if (s.hasHubSpot) {
+        try {
+          const d = await apiFetch('/api/hubspot');
+          document.getElementById('stat-hubspot').textContent = d.count;
+          document.getElementById('stat-hubspot-sub').textContent = 'Companies fetched';
+          document.getElementById('conn-hubspot-desc').textContent = 'Token configured and active.';
+          document.getElementById('conn-hubspot-status').className = 'badge badge-success';
+          document.getElementById('conn-hubspot-status').textContent = '● Connected';
+        } catch (e) {
+          document.getElementById('stat-hubspot').textContent = 'Error';
+          document.getElementById('stat-hubspot-sub').textContent = e.message;
+          document.getElementById('conn-hubspot-status').className = 'badge badge-danger';
+          document.getElementById('conn-hubspot-status').textContent = '● Error';
+        }
+      } else {
+        document.getElementById('stat-hubspot').textContent = '—';
+        document.getElementById('stat-hubspot-sub').textContent = 'Not configured';
+      }
+    } catch {}
+  }
+
+  function updateBadges() {
+    const s = state.settings;
+    const sb = document.getElementById('sheets-badge');
+    const hb = document.getElementById('hubspot-badge');
+    sb.className = s.hasGoogleSheets ? 'badge badge-success' : 'badge badge-warning';
+    hb.className = s.hasHubSpot     ? 'badge badge-success' : 'badge badge-warning';
+  }
+
+  // ── Connection tester ──
+  async function testConnections() {
+    const setRow = (cellId, detailId, ok, detail) => {
+      const cell = document.getElementById(cellId);
+      if (cell) cell.innerHTML = ok
+        ? `<span class="status-dot dot-green" style="margin-right:5px"></span>Connected`
+        : `<span class="status-dot dot-red"   style="margin-right:5px"></span>Error`;
+      const det = document.getElementById(detailId);
+      if (det) det.textContent = detail;
+    };
+
+    try {
+      const h = await apiFetch('/api/health');
+      setRow('status-server-cell', 'status-server-detail', true, `OK — ${new Date(h.timestamp).toLocaleTimeString()}`);
+    } catch (e) {
+      setRow('status-server-cell', 'status-server-detail', false, e.message);
+    }
+
+    try {
+      const { tabs } = await apiFetch('/api/sheets/tabs');
+      setRow('status-sheets-cell', 'status-sheets-detail', true, `${tabs.length} tab${tabs.length !== 1 ? 's' : ''}: ${tabs.map(t => t.title).join(', ')}`);
+    } catch (e) {
+      setRow('status-sheets-cell', 'status-sheets-detail', false, e.message);
+    }
+
+    try {
+      const d = await apiFetch('/api/hubspot');
+      setRow('status-hubspot-cell', 'status-hubspot-detail', true, `${d.count} companies fetched`);
+    } catch (e) {
+      setRow('status-hubspot-cell', 'status-hubspot-detail', false, e.message);
+    }
+
+    updateBadges();
+  }
+
+  // ── Per Product Movement ──
+  const ppm = {
+    rawData: [], headers: [],
+    colPartner: '', colClient: '', colProduct: '', colApp: '', colMrr: '',
+    colStartDate: '', colRenewalDate: '', colType: '',
+    hcData: [], hcMap: {}, hcPeriodCols: [],
+    hcColClient: '', hcColProduct: '',
+    upData: [], upMap: {}, upPartnerMap: {},
+    upColCompany: '', upColPartner: '', upAppCols: []
+  };
+
+  function fmtNum(n) {
+    if (n === '' || n === null || n === undefined) return '';
+    const v = parseFloat(n);
+    return isNaN(v) ? '' : v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  const _monthOrder = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  function parsePeriod(s) {
+    const pts = (s || '').trim().split(/[\s\-\/]+/);
+    let m = -1, y = 0;
+    for (const p of pts) {
+      const n = parseInt(p);
+      if (!isNaN(n) && n > 1900) y = n;
+      else { const mo = _monthOrder[(p || '').toLowerCase().slice(0, 3)]; if (mo !== undefined) m = mo; }
+    }
+    return y * 12 + m;
+  }
+
+  function isMonthCol(h) {
+    return /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i.test(h) && /\d{4}/.test(h);
+  }
+
+  function detectCol(headers, keywords) {
+    for (const kw of keywords) {
+      const found = headers.find(h => h.toLowerCase() === kw.toLowerCase());
+      if (found) return found;
+    }
+    for (const kw of keywords) {
+      const found = headers.find(h => h.toLowerCase().includes(kw.toLowerCase()));
+      if (found) return found;
+    }
+    return '';
+  }
+
+  async function loadPPMSheetList() {
+    const sel   = document.getElementById('ppm-sheet-select');
+    const hcSel = document.getElementById('hc-sheet-select');
+    const upSel = document.getElementById('up-sheet-select');
+    sel.innerHTML = '<option value="">Loading…</option>';
+    try {
+      const { tabs } = await apiFetch('/api/sheets/tabs');
+      const tabOpts = '<option value="">— select sheet —</option>' +
+        tabs.map(t => `<option value="${esc(t.title)}">${esc(t.title)}</option>`).join('');
+      sel.innerHTML   = tabOpts;
+      hcSel.innerHTML = tabOpts;
+      upSel.innerHTML = tabOpts;
+
+      const hcTab = tabs.find(t => t.title.toLowerCase().includes('headcount'));
+      if (hcTab) hcSel.value = hcTab.title;
+
+      const upTab = tabs.find(t =>
+        t.title.toLowerCase().includes('unit price') || t.title.toLowerCase().includes('unitprice')
+      );
+      if (upTab) upSel.value = upTab.title;
+
+      // Load HC and Unit Price first, then PPM data
+      if (hcSel.value) await loadHCData();
+      if (upSel.value) await loadUPData();
+      if (tabs.length > 0) { sel.value = tabs[0].title; await loadPPM(); }
+    } catch (e) {
+      sel.innerHTML = `<option value="">Error: ${e.message}</option>`;
+      throw e;
+    }
+  }
+
+  async function loadHCData() {
+    const sheet = document.getElementById('hc-sheet-select').value;
+    if (!sheet) return;
+
+    const statusEl = document.getElementById('hc-status');
+    statusEl.textContent = 'Loading HC…';
+    statusEl.className = 'status-pill pill-muted';
+    statusEl.style.display = '';
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(sheet)}`);
+      ppm.hcData = data.records;
+      const headers = data.records.length ? Object.keys(data.records[0]) : [];
+
+      // Auto-detect client and product/app columns
+      ppm.hcColClient  = detectCol(headers, ['client name', 'client', 'company']);
+      ppm.hcColProduct = detectCol(headers, ['product', 'application', 'app']);
+
+      // Month columns are the period keys (e.g. "Jul 2024", "Aug 2024", …)
+      ppm.hcPeriodCols = headers.filter(isMonthCol).sort((a, b) => parsePeriod(a) - parsePeriod(b));
+
+      buildHCMap();
+
+      const entryCount = Object.keys(ppm.hcMap).length;
+      statusEl.textContent = entryCount > 0
+        ? `✓ HC: ${entryCount} entries · ${ppm.hcPeriodCols.length} periods`
+        : `⚠ HC: 0 entries — check column mappings`;
+      statusEl.className = entryCount > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
+
+      if (ppm.rawData.length) renderPPM();
+    } catch (e) {
+      statusEl.textContent = '⚠ HC: ' + e.message;
+      statusEl.className = 'status-pill pill-red';
+    }
+  }
+
+  async function loadUPData() {
+    const sheet = document.getElementById('up-sheet-select').value;
+    if (!sheet) return;
+    const statusEl = document.getElementById('up-status');
+    statusEl.textContent = 'Loading Unit Price…';
+    statusEl.className = 'status-pill pill-muted';
+    statusEl.style.display = '';
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(sheet)}`);
+      ppm.upData = data.records;
+      const headers = data.records.length ? Object.keys(data.records[0]) : [];
+
+      ppm.upColCompany = detectCol(headers, ['company name', 'client name', 'company', 'client']);
+      ppm.upColPartner = detectCol(headers, ['partner', 'reseller']);
+
+      // Application columns are fixed at spreadsheet columns J–M (0-based indices 9–12)
+      ppm.upAppCols = headers.slice(9, 13).filter(Boolean);
+
+      ppm.upMap = {};
+      ppm.upPartnerMap = {};
+      for (const row of ppm.upData) {
+        const company = (row[ppm.upColCompany] || '').trim().toLowerCase();
+        const partner = (row[ppm.upColPartner] || '').trim().toLowerCase();
+        const prices = {};
+        for (const col of ppm.upAppCols) {
+          const v = row[col];
+          const parsed = parseFloat(v);
+          if (!isNaN(parsed) && parsed > 0) prices[col.trim().toLowerCase()] = parsed;
+        }
+        if (company) { if (!ppm.upMap[company]) ppm.upMap[company] = {}; Object.assign(ppm.upMap[company], prices); }
+        if (partner) { if (!ppm.upPartnerMap[partner]) ppm.upPartnerMap[partner] = {}; Object.assign(ppm.upPartnerMap[partner], prices); }
+      }
+
+      const count = Object.keys(ppm.upMap).length;
+      statusEl.textContent = count > 0
+        ? `✓ Unit Price: ${count} companies · ${ppm.upAppCols.length} apps`
+        : `⚠ Unit Price: 0 companies loaded`;
+      statusEl.className = count > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
+      if (ppm.rawData.length) renderPPM();
+    } catch (e) {
+      statusEl.textContent = '⚠ Unit Price: ' + e.message;
+      statusEl.className = 'status-pill pill-red';
+    }
+  }
+
+  function lookupUnitPrice(clientName, partnerName, app) {
+    const appKey     = (app         || '').trim().toLowerCase();
+    const clientKey  = (clientName  || '').trim().toLowerCase();
+    const partnerKey = (partnerName || '').trim().toLowerCase();
+
+    // Condition 1: match by client name — only use if price is a positive number
+    if (clientKey && ppm.upMap[clientKey]) {
+      const p = ppm.upMap[clientKey][appKey];
+      if (p !== undefined && p > 0) return p;
+    }
+
+    // Condition 2 (fallback): match by partner — used when client not found OR price is 0/missing
+    if (partnerKey && ppm.upPartnerMap[partnerKey]) {
+      const p = ppm.upPartnerMap[partnerKey][appKey];
+      if (p !== undefined && p > 0) return p;
+    }
+
+    return null;
+  }
+
+  function buildHCMap() {
+    ppm.hcMap = {};
+    const cc = ppm.hcColClient;
+    const cp = ppm.hcColProduct;
+    for (const row of ppm.hcData) {
+      const key = `${(row[cc] || '').trim().toLowerCase()}|||${(row[cp] || '').trim().toLowerCase()}`;
+      if (!ppm.hcMap[key]) ppm.hcMap[key] = {};
+      for (const col of ppm.hcPeriodCols) {
+        const v = row[col];
+        if (v !== null && v !== undefined && v !== '') ppm.hcMap[key][col] = v;
+      }
+    }
+  }
+
+  function lookupHC(clientName, app, period) {
+    const key = `${(clientName || '').trim().toLowerCase()}|||${(app || '').trim().toLowerCase()}`;
+    const entry = ppm.hcMap[key];
+    if (!entry) return '';
+    if (period) return entry[period] ?? '';
+    // No period selected: return latest available value
+    for (let i = ppm.hcPeriodCols.length - 1; i >= 0; i--) {
+      const v = entry[ppm.hcPeriodCols[i]];
+      if (v !== undefined) return v;
+    }
+    return '';
+  }
+
+  async function loadPPM() {
+    const sheet = document.getElementById('ppm-sheet-select').value;
+    if (!sheet) return;
+
+    const el = document.getElementById('ppm-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+    document.getElementById('ppm-stats').innerHTML = '';
+    document.getElementById('ppm-count-label').textContent = '';
+
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(sheet)}`);
+      ppm.headers = data.records.length ? Object.keys(data.records[0]) : [];
+
+      // Auto-detect columns
+      ppm.colPartner     = detectCol(ppm.headers, ['partner']);
+      ppm.colClient      = detectCol(ppm.headers, ['client name', 'client', 'customer']);
+      ppm.colProduct     = detectCol(ppm.headers, ['product']);
+      ppm.colApp         = detectCol(ppm.headers, ['application', 'app']);
+      ppm.colMrr         = detectCol(ppm.headers, ['mrr']);
+      ppm.colStartDate   = detectCol(ppm.headers, ['start date', 'start', 'contract start', 'go live']);
+      ppm.colRenewalDate = detectCol(ppm.headers, ['renewal date', 'renewal', 'end date', 'contract end', 'expiry']);
+      ppm.colType        = detectCol(ppm.headers, ['type']);
+
+      // Exclude Demo clients from all calculations and views
+      ppm.rawData = ppm.colType
+        ? data.records.filter(r => !(r[ppm.colType] || '').toLowerCase().includes('demo'))
+        : data.records;
+
+      // Override with manual selectors if user changed them
+      const manPartner = document.getElementById('ppm-col-partner').value;
+      const manClient  = document.getElementById('ppm-col-client').value;
+      const manProduct = document.getElementById('ppm-col-product').value;
+      const manApp     = document.getElementById('ppm-col-app').value;
+      const manMrr     = document.getElementById('ppm-col-mrr').value;
+      if (manPartner) ppm.colPartner = manPartner;
+      if (manClient)  ppm.colClient  = manClient;
+      if (manProduct) ppm.colProduct = manProduct;
+      if (manApp)     ppm.colApp     = manApp;
+      if (manMrr)     ppm.colMrr     = manMrr;
+
+      // Populate column selector dropdowns
+      const opts = '<option value="">— auto —</option>' +
+        ppm.headers.map(h => `<option value="${esc(h)}">${esc(h)}</option>`).join('');
+      ['partner','client','product','app','mrr'].forEach(k =>
+        document.getElementById(`ppm-col-${k}`).innerHTML = opts
+      );
+      document.getElementById('ppm-col-partner').value = ppm.colPartner;
+      document.getElementById('ppm-col-client').value  = ppm.colClient;
+      document.getElementById('ppm-col-product').value = ppm.colProduct;
+      document.getElementById('ppm-col-app').value     = ppm.colApp;
+      document.getElementById('ppm-col-mrr').value     = ppm.colMrr;
+
+      populatePPMFilters();
+      renderPPM();
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+    }
+  }
+
+  function populatePPMFilters() {
+    const cp = ppm.colPartner, cc = ppm.colClient;
+    const partners = [...new Set(ppm.rawData.map(r => r[cp] || '').filter(Boolean))].sort();
+    const clients  = [...new Set(ppm.rawData.map(r => r[cc] || '').filter(Boolean))].sort();
+    document.getElementById('ppm-filter-partner').innerHTML =
+      '<option value="">All Partners</option>' + partners.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    document.getElementById('ppm-filter-client').innerHTML =
+      '<option value="">All Clients</option>' + clients.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  }
+
+  function clearPPMFilters() {
+    ['ppm-filter-partner','ppm-filter-client','ppm-search'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    renderPPM();
+  }
+
+  function renderPPM() {
+    const cp     = document.getElementById('ppm-col-partner').value  || ppm.colPartner;
+    const cc     = document.getElementById('ppm-col-client').value   || ppm.colClient;
+    const cpd    = document.getElementById('ppm-col-product').value  || ppm.colProduct;
+    const ca     = document.getElementById('ppm-col-app').value      || ppm.colApp;
+    const cm     = document.getElementById('ppm-col-mrr').value      || ppm.colMrr;
+    const hasHC  = Object.keys(ppm.hcMap).length > 0;
+
+    const fPartner = document.getElementById('ppm-filter-partner').value;
+    const fClient  = document.getElementById('ppm-filter-client').value;
+    const search   = document.getElementById('ppm-search').value.toLowerCase();
+
+    // Split comma-separated Application values into one row each
+    let exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      const list = apps.length ? apps : [''];
+      for (const app of list) {
+        exploded.push({ ...row, [ca]: app });
+      }
+    }
+
+    let rows = exploded.filter(r => {
+      if (fPartner && (r[cp] || '') !== fPartner) return false;
+      if (fClient  && (r[cc] || '') !== fClient)  return false;
+      if (search   && !(r[ca] || '').toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    // Sort: Partner → Client Name → Application
+    rows = [...rows].sort((a, b) => {
+      for (const col of [cp, cc, ca]) {
+        const s = (a[col] || '').localeCompare(b[col] || '');
+        if (s !== 0) return s;
+      }
+      return 0;
+    });
+
+    // Stats
+    const uPartners = new Set(rows.map(r => r[cp] || '').filter(Boolean));
+    const uClients  = new Set(rows.map(r => r[cc] || '').filter(Boolean));
+    const uApps     = new Set(rows.map(r => r[ca] || '').filter(Boolean));
+    document.getElementById('ppm-stats').innerHTML = `
+      <div class="ppm-stat"><div class="n">${uPartners.size}</div><div class="l">Partners</div></div>
+      <div class="ppm-stat"><div class="n">${uClients.size}</div><div class="l">Clients</div></div>
+      <div class="ppm-stat"><div class="n">${uApps.size}</div><div class="l">Applications</div></div>
+      <div class="ppm-stat"><div class="n">${rows.length}</div><div class="l">Total Rows</div></div>
+    `;
+    document.getElementById('ppm-count-label').textContent = `${rows.length} row${rows.length !== 1 ? 's' : ''}`;
+
+    if (rows.length === 0) {
+      document.getElementById('ppm-content').innerHTML =
+        '<div class="empty-state"><div class="empty-icon">📭</div><p>No rows match the current filters.</p></div>';
+      return;
+    }
+
+    // Base columns
+    const baseCols = [cp, cc, cpd, ca].filter(Boolean);
+    const hasMrr    = !!cm;
+    const hasMonths = hasHC && ppm.hcPeriodCols.length > 0;
+    const hasUP     = Object.keys(ppm.upMap).length > 0 || Object.keys(ppm.upPartnerMap).length > 0;
+    const showMrrCols = hasMonths && hasUP;  // computed MRR per month
+
+    // Group months by year
+    const yearGroups = {};
+    for (const col of ppm.hcPeriodCols) {
+      const yr = (col.match(/\d{4}/) || ['?'])[0];
+      if (!yearGroups[yr]) yearGroups[yr] = [];
+      yearGroups[yr].push(col);
+    }
+    const sortedYears = Object.keys(yearGroups).sort();
+
+    // Cols per month: 1 (HC only) or 2 (HC + computed MRR)
+    const subPerMonth = showMrrCols ? 2 : 1;
+    // Header rows: 3 when we have both HC and MRR per month, 2 otherwise
+    const numHeaderRows = (hasMonths || hasMrr) ? (showMrrCols ? 3 : 2) : 1;
+
+    const totalCols = baseCols.length + (hasMrr ? 1 : 0) + ppm.hcPeriodCols.length * subPerMonth;
+
+    // ── Row 1: base cols (rowspan=numHeaderRows), static MRR (rowspan), year groups ──
+    let r1 = baseCols.map((h, i) => {
+      const label = h === ca ? 'Application' : esc(h);
+      const sticky = i < 4 ? ` class="col-sticky col-sticky-${i}"` : '';
+      return `<th rowspan="${numHeaderRows}"${sticky}>${label}</th>`;
+    }).join('');
+    if (hasMrr) r1 += `<th rowspan="${numHeaderRows}" class="th-group" style="background:#166534">MRR</th>`;
+    if (hasMonths) r1 += sortedYears.map(yr =>
+      `<th colspan="${yearGroups[yr].length * subPerMonth}" class="th-group">${yr}</th>`
+    ).join('');
+    const row1 = `<tr>${r1}</tr>`;
+
+    // ── Row 2: month abbreviations (colspan=subPerMonth each) ──
+    let row2 = '';
+    if (hasMonths) {
+      const r2 = ppm.hcPeriodCols.map(col => {
+        const abbr = col.replace(/\s*\d{4}\s*/, '').trim().slice(0, 3);
+        return `<th colspan="${subPerMonth}" class="th-sub th-month-grp">${esc(abbr)}</th>`;
+      }).join('');
+      row2 = `<tr>${r2}</tr>`;
+    }
+
+    // ── Row 3: HC | MRR labels per month (only when showMrrCols) ──
+    let row3 = '';
+    if (showMrrCols) {
+      const r3 = ppm.hcPeriodCols.map(() =>
+        `<th class="th-sub th-month">HC</th><th class="th-sub th-mrr-month">MRR</th>`
+      ).join('');
+      row3 = `<tr>${r3}</tr>`;
+    }
+
+    // ── Data rows ──
+    let html = '';
+    let lastPartner = null;
+    for (const row of rows) {
+      const partner = row[cp] || '—';
+      if (partner !== lastPartner) {
+        html += `<tr class="group-header-partner"><td colspan="${totalCols}">▸ ${esc(partner)}</td></tr>`;
+        lastPartner = partner;
+      }
+
+      let tds = baseCols.map((h, i) => {
+        const val = esc(row[h] ?? '');
+        let cls = '';
+        if (h === cp) cls = 'col-partner col-sticky col-sticky-0';
+        else if (h === cc) cls = 'col-client col-sticky col-sticky-1';
+        else if (h === ca) cls = 'col-app col-sticky col-sticky-3';
+        return `<td class="${cls}" title="${val}">${val}</td>`;
+      }).join('');
+
+      if (hasMrr) {
+        const mrrVal = esc(row[cm] ?? '');
+        tds += `<td class="col-mrr align-right" title="${mrrVal}">${mrrVal}</td>`;
+      }
+
+      if (hasMonths) {
+        for (const col of ppm.hcPeriodCols) {
+          const hcRaw = lookupHC(row[cc], row[ca], col);
+          tds += `<td class="col-hc th-month" title="${esc(hcRaw)}">${esc(hcRaw)}</td>`;
+          if (showMrrCols) {
+            let computedMrr = '';
+            const hcNum = parseFloat(hcRaw);
+            if (!isNaN(hcNum) && hcNum > 0) {
+              const unitPrice = lookupUnitPrice(row[cc], row[cp], row[ca]);
+              if (unitPrice !== null) computedMrr = fmtNum(hcNum * unitPrice);
+            }
+            tds += `<td class="col-mrr th-mrr-month" title="${esc(computedMrr)}">${esc(computedMrr)}</td>`;
+          }
+        }
+      }
+
+      html += `<tr>${tds}</tr>`;
+    }
+
+    const ppmWrap = document.createElement('div');
+    ppmWrap.className = 'table-wrap';
+    ppmWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead>${row1}${row2}${row3}</thead><tbody>${html}</tbody></table>`;
+    const ppmContent = document.getElementById('ppm-content');
+    ppmContent.innerHTML = '';
+    ppmContent.appendChild(ppmWrap);
+    setTimeout(() => fixStickyHeaders(ppmWrap), 0);
+  }
+
+  function fixStickyHeaders(wrapper) {
+    if (!wrapper) return;
+    const rows = Array.from(wrapper.querySelectorAll('thead tr'));
+    let top = 0;
+    for (const row of rows) {
+      row.querySelectorAll('th').forEach(th => { th.style.top = top + 'px'; });
+      top += row.getBoundingClientRect().height || row.offsetHeight || 28;
+    }
+  }
+
+  // ── Dashboard tabs ──
+  function switchDashTab(tab) {
+    ['overview', 'overall-movement'].forEach(t => {
+      document.getElementById(`dash-tab-${t}`).style.display = t === tab ? '' : 'none';
+      document.getElementById(`dtab-${t}`).classList.toggle('active', t === tab);
+    });
+    if (tab !== 'overall-movement') return;
+
+    if (ppm.rawData.length && ppm.hcPeriodCols.length) {
+      renderOverallMovement();
+    } else {
+      const el = document.getElementById('overall-movement-content');
+      el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+      loadPPMSheetList()
+        .then(() => renderOverallMovement())
+        .catch(e => {
+          el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+        });
+    }
+  }
+
+  function renderOverallMovement() {
+    const el = document.getElementById('overall-movement-content');
+
+    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Go to <strong>Per Product Movement</strong> and click <strong>↻ Tabs</strong> to load data first.</p></div>';
+      return;
+    }
+
+    const cc  = ppm.colClient;
+    const cp  = ppm.colPartner;
+    const ca  = ppm.colApp;
+    const csd = ppm.colStartDate;
+    const crd = ppm.colRenewalDate;
+
+    // Explode comma-separated applications
+    const exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      for (const app of (apps.length ? apps : [''])) exploded.push({ ...row, [ca]: app });
+    }
+
+    // Group by partner + client
+    const clientMap = new Map();
+    for (const row of exploded) {
+      const key = `${row[cp] || ''}|||${row[cc] || ''}`;
+      if (!clientMap.has(key)) {
+        clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
+          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+      }
+      const e = clientMap.get(key);
+      if (row[ca]) e.apps.push(row[ca]);
+      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
+      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
+    }
+
+    // Compute per-month Total MRR and MAX HC per client
+    const clientRows = [];
+    for (const [, e] of clientMap) {
+      const monthData = {};
+      for (const col of ppm.hcPeriodCols) {
+        let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
+        for (const app of e.apps) {
+          const hcNum = parseFloat(lookupHC(e.client, app, col));
+          if (!isNaN(hcNum) && hcNum > 0) {
+            hasHc = true;
+            if (hcNum > maxHc) maxHc = hcNum;
+            const up = lookupUnitPrice(e.client, e.partner, app);
+            if (up !== null) { totalMrr += hcNum * up; hasMrr = true; }
+          }
+        }
+        monthData[col] = { mrr: hasMrr ? totalMrr : '', hc: hasHc ? maxHc : '' };
+      }
+      clientRows.push({ ...e, monthData });
+    }
+
+    clientRows.sort((a, b) => {
+      const s = a.partner.localeCompare(b.partner);
+      return s !== 0 ? s : a.client.localeCompare(b.client);
+    });
+
+    // Compute column totals per month
+    const totals = {};
+    for (const col of ppm.hcPeriodCols) {
+      let sumMrr = 0, sumHc = 0, hasMrr = false, hasHc = false;
+      for (const r of clientRows) {
+        const d = r.monthData[col];
+        if (d.mrr !== '') { sumMrr += parseFloat(d.mrr) || 0; hasMrr = true; }
+        if (d.hc  !== '') { sumHc  += parseFloat(d.hc)  || 0; hasHc  = true; }
+      }
+      totals[col] = { mrr: hasMrr ? sumMrr : '', hc: hasHc ? sumHc : '' };
+    }
+
+    // Year groups for header
+    const yearGroups = {};
+    for (const col of ppm.hcPeriodCols) {
+      const yr = (col.match(/\d{4}/) || ['?'])[0];
+      if (!yearGroups[yr]) yearGroups[yr] = [];
+      yearGroups[yr].push(col);
+    }
+    const sortedYears = Object.keys(yearGroups).sort();
+
+    const baseCols = [
+      { key: 'partner',     label: 'Partner' },
+      { key: 'client',      label: 'Client Name' },
+      ...(csd ? [{ key: 'startDate',   label: 'Start Date' }]   : []),
+      ...(crd ? [{ key: 'renewalDate', label: 'Renewal Date' }] : []),
+    ];
+    const totalCols = baseCols.length + ppm.hcPeriodCols.length * 2;
+
+    // 3-row header
+    let r1 = baseCols.map(c => `<th rowspan="3">${esc(c.label)}</th>`).join('');
+    r1 += sortedYears.map(yr =>
+      `<th colspan="${yearGroups[yr].length * 2}" class="th-group">${yr}</th>`
+    ).join('');
+
+    const r2 = ppm.hcPeriodCols.map(col => {
+      const abbr = col.replace(/\s*\d{4}\s*/, '').trim().slice(0, 3);
+      return `<th colspan="2" class="th-sub th-month-grp">${esc(abbr)}</th>`;
+    }).join('');
+
+    const r3 = ppm.hcPeriodCols.map(() =>
+      `<th class="th-sub th-mrr-month">MRR</th><th class="th-sub th-month">HC</th>`
+    ).join('');
+
+    // Totals row
+    let totalTds = baseCols.map((c, i) =>
+      `<td>${i === 0 ? 'TOTAL' : ''}</td>`
+    ).join('');
+    for (const col of ppm.hcPeriodCols) {
+      const d = totals[col];
+      const tMrr = d.mrr !== '' ? fmtNum(d.mrr) : '';
+      const tHc  = d.hc  !== '' ? fmtNum(d.hc)  : '';
+      totalTds += `<td class="col-mrr th-mrr-month" title="${esc(tMrr)}">${esc(tMrr)}</td>`;
+      totalTds += `<td class="col-hc th-month" title="${esc(tHc)}">${esc(tHc)}</td>`;
+    }
+
+    // Data rows grouped by Partner
+    let html = '';
+    let lastPartner = '';
+    for (const row of clientRows) {
+      if (row.partner !== lastPartner) {
+        html += `<tr class="group-header-partner"><td colspan="${totalCols}">▸ ${esc(row.partner)}</td></tr>`;
+        lastPartner = row.partner;
+      }
+      let tds = baseCols.map(c => {
+        const v = esc(row[c.key] || '');
+        return `<td title="${v}">${v}</td>`;
+      }).join('');
+      for (const col of ppm.hcPeriodCols) {
+        const d = row.monthData[col];
+        const mrrStr = d.mrr !== '' ? fmtNum(d.mrr) : '';
+        const hcStr  = d.hc  !== '' ? String(d.hc)  : '';
+        tds += `<td class="col-mrr th-mrr-month" title="${esc(mrrStr)}">${esc(mrrStr)}</td>`;
+        tds += `<td class="col-hc th-month" title="${esc(hcStr)}">${esc(hcStr)}</td>`;
+      }
+      html += `<tr>${tds}</tr>`;
+    }
+
+    const omWrap = document.createElement('div');
+    omWrap.className = 'table-wrap';
+    omWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead><tr>${r1}</tr><tr>${r2}</tr><tr>${r3}</tr></thead><tbody><tr class="om-totals-row">${totalTds}</tr>${html}</tbody></table>`;
+
+    el.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-secondary btn-sm" onclick="downloadOverallMovementCSV()">⬇ Download CSV</button></div>`;
+    el.appendChild(omWrap);
+    setTimeout(() => fixStickyHeaders(omWrap), 0);
+  }
+
+  function downloadOverallMovementCSV() {
+    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) return;
+
+    const cc  = ppm.colClient;
+    const cp  = ppm.colPartner;
+    const ca  = ppm.colApp;
+    const csd = ppm.colStartDate;
+    const crd = ppm.colRenewalDate;
+
+    // Explode application rows
+    const exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      for (const app of (apps.length ? apps : [''])) exploded.push({ ...row, [ca]: app });
+    }
+
+    // Group by partner + client
+    const clientMap = new Map();
+    for (const row of exploded) {
+      const key = `${row[cp] || ''}|||${row[cc] || ''}`;
+      if (!clientMap.has(key)) {
+        clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
+          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+      }
+      const e = clientMap.get(key);
+      if (row[ca]) e.apps.push(row[ca]);
+      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
+      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
+    }
+
+    // Compute per-month data per client
+    const clientRows = [];
+    for (const [, e] of clientMap) {
+      const monthData = {};
+      for (const col of ppm.hcPeriodCols) {
+        let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
+        for (const app of e.apps) {
+          const hcNum = parseFloat(lookupHC(e.client, app, col));
+          if (!isNaN(hcNum) && hcNum > 0) {
+            hasHc = true;
+            if (hcNum > maxHc) maxHc = hcNum;
+            const up = lookupUnitPrice(e.client, e.partner, app);
+            if (up !== null) { totalMrr += hcNum * up; hasMrr = true; }
+          }
+        }
+        monthData[col] = { mrr: hasMrr ? totalMrr : '', hc: hasHc ? maxHc : '' };
+      }
+      clientRows.push({ ...e, monthData });
+    }
+    clientRows.sort((a, b) => {
+      const s = a.partner.localeCompare(b.partner);
+      return s !== 0 ? s : a.client.localeCompare(b.client);
+    });
+
+    // Totals per month
+    const totals = {};
+    for (const col of ppm.hcPeriodCols) {
+      let sumMrr = 0, sumHc = 0, hasMrr = false, hasHc = false;
+      for (const r of clientRows) {
+        const d = r.monthData[col];
+        if (d.mrr !== '') { sumMrr += parseFloat(d.mrr) || 0; hasMrr = true; }
+        if (d.hc  !== '') { sumHc  += parseFloat(d.hc)  || 0; hasHc  = true; }
+      }
+      totals[col] = { mrr: hasMrr ? sumMrr : '', hc: hasHc ? sumHc : '' };
+    }
+
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    const baseCols = ['Partner', 'Client Name',
+      ...(csd ? ['Start Date']   : []),
+      ...(crd ? ['Renewal Date'] : [])];
+    const monthCols = ppm.hcPeriodCols.flatMap(col => [`${col} MRR`, `${col} HC`]);
+    const csvRows = [];
+
+    // Header
+    csvRows.push([...baseCols, ...monthCols].map(csvCell).join(','));
+
+    // Totals row
+    const totalBase = ['TOTAL', '', ...(csd ? [''] : []), ...(crd ? [''] : [])];
+    const totalMonth = ppm.hcPeriodCols.flatMap(col => {
+      const d = totals[col];
+      return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
+    });
+    csvRows.push([...totalBase, ...totalMonth].map(csvCell).join(','));
+
+    // Data rows
+    for (const row of clientRows) {
+      const base = [row.partner, row.client,
+        ...(csd ? [row.startDate]   : []),
+        ...(crd ? [row.renewalDate] : [])];
+      const months = ppm.hcPeriodCols.flatMap(col => {
+        const d = row.monthData[col];
+        return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
+      });
+      csvRows.push([...base, ...months].map(csvCell).join(','));
+    }
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `overall-movement-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ── SaaS Metrics Movement ──
+
+  function periodToYM(col) {
+    const yr = parseInt((col.match(/\d{4}/) || ['0'])[0]);
+    const mStr = (col.match(/[a-zA-Z]+/) || [''])[0].toLowerCase().slice(0, 3);
+    const m = _monthOrder[mStr];
+    if (m === undefined || !yr) return null;
+    return { year: yr, month: m };
+  }
+
+  function parseDateToYM(dateStr) {
+    if (!dateStr || String(dateStr).trim() === '') return null;
+    const s = String(dateStr).trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return { year: parseInt(m[1]), month: parseInt(m[2]) - 1 };
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return { year: parseInt(m[3]), month: parseInt(m[1]) - 1 };
+    m = s.match(/(\d{1,2})[-\s]([a-zA-Z]{3,})[-\s](\d{4})/);
+    if (m) {
+      const mo = _monthOrder[m[2].toLowerCase().slice(0, 3)];
+      if (mo !== undefined) return { year: parseInt(m[3]), month: mo };
+    }
+    const d = new Date(s);
+    if (!isNaN(d)) return { year: d.getFullYear(), month: d.getMonth() };
+    return null;
+  }
+
+  function ymMatch(ym, periodCol) {
+    if (!ym) return false;
+    const pp = periodToYM(periodCol);
+    return pp && ym.year === pp.year && ym.month === pp.month;
+  }
+
+  function computeSaasMetrics() {
+    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) return null;
+
+    const cc  = ppm.colClient;
+    const cp  = ppm.colPartner;
+    const ca  = ppm.colApp;
+    const csd = ppm.colStartDate;
+    const crd = ppm.colRenewalDate;
+
+    // Explode apps then group by partner+client
+    const exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      for (const app of (apps.length ? apps : [''])) exploded.push({ ...row, [ca]: app });
+    }
+
+    const clientMap = new Map();
+    for (const row of exploded) {
+      const key = `${row[cp] || ''}|||${row[cc] || ''}`;
+      if (!clientMap.has(key)) {
+        clientMap.set(key, {
+          partner: row[cp] || '', client: row[cc] || '',
+          startDate: row[csd] || '', terminationDate: row[crd] || '', apps: []
+        });
+      }
+      const e = clientMap.get(key);
+      if (row[ca]) e.apps.push(row[ca]);
+      if (!e.startDate && row[csd]) e.startDate = row[csd];
+      if (!e.terminationDate && row[crd]) e.terminationDate = row[crd];
+    }
+
+    // Pre-compute per-client MRR and HC per period
+    const clientList = [];
+    for (const [, e] of clientMap) {
+      const mrrByPeriod = {}, hcByPeriod = {};
+      for (const col of ppm.hcPeriodCols) {
+        let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
+        for (const app of e.apps) {
+          const hcNum = parseFloat(lookupHC(e.client, app, col));
+          if (!isNaN(hcNum) && hcNum > 0) {
+            hasHc = true;
+            if (hcNum > maxHc) maxHc = hcNum;
+            const up = lookupUnitPrice(e.client, e.partner, app);
+            if (up !== null) { totalMrr += hcNum * up; hasMrr = true; }
+          }
+        }
+        mrrByPeriod[col] = hasMrr ? totalMrr : 0;
+        hcByPeriod[col]  = hasHc  ? maxHc    : 0;
+      }
+      clientList.push({
+        ...e,
+        mrrByPeriod, hcByPeriod,
+        startYM: parseDateToYM(e.startDate),
+        termYM:  parseDateToYM(e.terminationDate)
+      });
+    }
+
+    const allPeriods = ppm.hcPeriodCols;
+
+    // Find display start: month after July 2024; fall back to index 1
+    let startIdx = 1;
+    const julyIdx = allPeriods.findIndex(p => {
+      const ym = periodToYM(p);
+      return ym && ym.year === 2024 && ym.month === 6;
+    });
+    if (julyIdx >= 0) startIdx = julyIdx + 1;
+    if (startIdx >= allPeriods.length) startIdx = 1;
+
+    const displayPeriods = allPeriods.slice(startIdx);
+
+    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+      const prevPeriod = allPeriods[startIdx + i - 1];
+
+      let beginningMrr = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+
+      for (const client of clientList) {
+        const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
+        const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
+        const hcCurr  = client.hcByPeriod[currPeriod] || 0;
+        const hcPrev  = prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0;
+
+        beginningMrr += mrrPrev;
+
+        const wasActive = hcPrev > 0;
+        const isActive  = hcCurr > 0;
+
+        // Lost: active in prevPeriod, gone in currPeriod (by HC drop or termination in prev period)
+        const lostByHC   = wasActive && !isActive;
+        const lostByTerm = !lostByHC && wasActive && client.termYM && ymMatch(client.termYM, prevPeriod);
+        const isLost     = lostByHC || lostByTerm;
+
+        // New business: start date falls in currPeriod; fallback to first-ever activity
+        const isNew = client.startYM
+          ? ymMatch(client.startYM, currPeriod)
+          : (!wasActive && isActive);
+
+        if (isLost) {
+          // Use last known non-zero MRR
+          let lastMrr = mrrPrev;
+          if (!lastMrr) {
+            for (let j = startIdx + i - 2; j >= 0; j--) {
+              const v = client.mrrByPeriod[allPeriods[j]];
+              if (v && v > 0) { lastMrr = v; break; }
+            }
+          }
+          lostClients += lastMrr;
+        } else if (isNew && isActive) {
+          newBusiness += mrrCurr;
+        } else if (wasActive && isActive) {
+          if (mrrCurr > mrrPrev) expansion  += mrrCurr - mrrPrev;
+          else if (mrrCurr < mrrPrev) contraction += mrrPrev - mrrCurr;
+        }
+      }
+
+      return {
+        period: currPeriod,
+        beginningMrr, newBusiness,
+        expansion, contraction, lostClients,
+        endingMrr: beginningMrr + newBusiness + expansion - contraction - lostClients
+      };
+    });
+
+    return { displayPeriods, metricsPerPeriod };
+  }
+
+  async function loadSaasMetrics() {
+    const el = document.getElementById('saas-metrics-content');
+    if (ppm.rawData.length && ppm.hcPeriodCols.length) {
+      renderSaasMetrics();
+    } else {
+      el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+      try {
+        await loadPPMSheetList();
+        renderSaasMetrics();
+      } catch (e) {
+        el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+      }
+    }
+  }
+
+  function renderSaasMetrics() {
+    const el = document.getElementById('saas-metrics-content');
+
+    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Go to <strong>Per Product Movement</strong> and click <strong>↻ Tabs</strong> to load data first.</p></div>';
+      document.getElementById('sm-stats-bar').innerHTML = '';
+      return;
+    }
+
+    const result = computeSaasMetrics();
+    if (!result || !result.displayPeriods.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Not enough periods to compute metrics. Ensure the HC sheet covers at least 2 periods including July 2024.</p></div>';
+      document.getElementById('sm-stats-bar').innerHTML = '';
+      return;
+    }
+
+    const { displayPeriods, metricsPerPeriod } = result;
+    const lastM = metricsPerPeriod[metricsPerPeriod.length - 1];
+    const firstM = metricsPerPeriod[0];
+
+    function fmtC(v) {
+      if (v === null || v === undefined) return '—';
+      return parseFloat(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    // Summary stat cards
+    const totalNewBiz  = metricsPerPeriod.reduce((s, m) => s + m.newBusiness, 0);
+    const totalLost    = metricsPerPeriod.reduce((s, m) => s + m.lostClients, 0);
+    const netChange    = lastM.endingMrr - firstM.beginningMrr;
+    document.getElementById('sm-stats-bar').innerHTML = `
+      <div class="sm-stat"><div class="n" style="color:var(--primary)">${fmtC(lastM.endingMrr)}</div><div class="l">Latest MRR</div></div>
+      <div class="sm-stat"><div class="n" style="color:var(--success)">+${fmtC(totalNewBiz)}</div><div class="l">Total New Business</div></div>
+      <div class="sm-stat"><div class="n" style="color:var(--danger)">−${fmtC(totalLost)}</div><div class="l">Total Lost Clients</div></div>
+      <div class="sm-stat"><div class="n" style="color:${netChange >= 0 ? 'var(--success)' : 'var(--danger)'}">${netChange >= 0 ? '+' : ''}${fmtC(netChange)}</div><div class="l">Net MRR Change</div></div>
+    `;
+
+    // Year groups for column headers
+    const yearGroups = {};
+    for (const col of displayPeriods) {
+      const yr = (col.match(/\d{4}/) || ['?'])[0];
+      if (!yearGroups[yr]) yearGroups[yr] = [];
+      yearGroups[yr].push(col);
+    }
+    const sortedYears = Object.keys(yearGroups).sort();
+
+    const hdr1 = `<th rowspan="2" class="sm-header-label">Metric</th>` +
+      sortedYears.map(yr =>
+        `<th colspan="${yearGroups[yr].length}" class="th-group">${yr}</th>`
+      ).join('');
+
+    const hdr2 = displayPeriods.map(col => {
+      const abbr = col.replace(/\s*\d{4}\s*/, '').trim().slice(0, 3);
+      return `<th class="th-sub th-mrr-month" style="min-width:130px">${esc(abbr)}</th>`;
+    }).join('');
+
+    const metrics = [
+      { key: 'beginningMrr', label: 'Beginning MRR',  cls: 'sm-row-beginning' },
+      { key: 'newBusiness',  label: '+ New Business',  cls: 'sm-row-new'       },
+      { key: 'upsell',       label: '+ Upsell',        cls: 'sm-row-upsell'    },
+      { key: '__div__' },
+      { key: 'contraction',  label: '− Contraction',   cls: 'sm-row-contraction', negate: true },
+      { key: 'expansion',    label: '+ Expansion',     cls: 'sm-row-expansion'    },
+      { key: 'lostClients',  label: '− Lost Clients',  cls: 'sm-row-lost',        negate: true },
+      { key: '__div__' },
+      { key: 'endingMrr',    label: 'Ending MRR',      cls: 'sm-row-ending'       },
+    ];
+
+    let bodyHtml = '';
+    for (const m of metrics) {
+      if (m.key === '__div__') {
+        bodyHtml += `<tr class="sm-divider"><td colspan="${displayPeriods.length + 1}"></td></tr>`;
+        continue;
+      }
+      const isUpsell = m.key === 'upsell';
+      let tds = `<td class="sm-metric-label">${esc(m.label)}</td>`;
+      for (const mp of metricsPerPeriod) {
+        if (isUpsell) { tds += `<td class="sm-val">—</td>`; continue; }
+        const raw = mp[m.key];
+        const display = m.negate ? `(${fmtC(raw)})` : fmtC(raw);
+        tds += `<td class="sm-val">${esc(display)}</td>`;
+      }
+      bodyHtml += `<tr class="${m.cls}">${tds}</tr>`;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    wrap.innerHTML = `
+      <table style="width:auto;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px">
+        <thead>
+          <tr>${hdr1}</tr>
+          <tr>${hdr2}</tr>
+        </thead>
+        <tbody>${bodyHtml}</tbody>
+      </table>`;
+
+    el.innerHTML = '';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.appendChild(wrap);
+    el.appendChild(card);
+    setTimeout(() => fixStickyHeaders(wrap), 0);
+  }
+
+  function downloadSaasMetricsCSV() {
+    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) return;
+    const result = computeSaasMetrics();
+    if (!result) return;
+    const { displayPeriods, metricsPerPeriod } = result;
+
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    const header = ['Metric', ...displayPeriods].map(csvCell).join(',');
+    const rows = [
+      ['Beginning MRR', ...metricsPerPeriod.map(m => m.beginningMrr.toFixed(2))],
+      ['New Business',  ...metricsPerPeriod.map(m => m.newBusiness.toFixed(2))],
+      ['Upsell',        ...metricsPerPeriod.map(() => '')],
+      ['Contraction',   ...metricsPerPeriod.map(m => (-m.contraction).toFixed(2))],
+      ['Expansion',     ...metricsPerPeriod.map(m => m.expansion.toFixed(2))],
+      ['Lost Clients',  ...metricsPerPeriod.map(m => (-m.lostClients).toFixed(2))],
+      ['Ending MRR',    ...metricsPerPeriod.map(m => m.endingMrr.toFixed(2))],
+    ].map(r => r.map(csvCell).join(','));
+
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `saas-metrics-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function toggleSidebar() {
+    document.body.classList.toggle('sb-collapsed');
+  }
+
+  // ── Init ──
+  (async () => {
+    try { state.settings = await apiFetch('/api/settings'); } catch {}
+    refreshDashboard();
+    // Show logged-in user in topbar
+    try {
+      const me = await apiFetch('/api/me');
+      if (me && me.email) {
+        const wrap = document.getElementById('user-info');
+        document.getElementById('user-name').textContent = me.name || me.email;
+        const avatar = document.getElementById('user-avatar');
+        if (me.picture) { avatar.src = me.picture; avatar.style.display = ''; }
+        wrap.style.display = 'flex';
+      }
+    } catch {}
+  })();
+</script>
+</body>
+</html>
