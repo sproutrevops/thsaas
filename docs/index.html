@@ -768,7 +768,8 @@
 
 <script>
   // ── Static mode: Google OAuth + Sheets API direct calls ──
-  const CLIENT_ID = '444033649262-dq8ao3h13ue4vin926cf65h0o9ff5918.apps.googleusercontent.com';
+  const CLIENT_ID      = '444033649262-dq8ao3h13ue4vin926cf65h0o9ff5918.apps.googleusercontent.com';
+  const DEFAULT_SHEETS_ID = '1RJ5necS3CfC_4Gkpn-gtdS7VapykTMHbwLZu6nIs0tE';
   let tokenClient = null, accessToken = null, currentUser = null;
 
   function initGoogleAuth() {
@@ -838,7 +839,10 @@
   }
 
   function getLocalSettings() {
-    try { return JSON.parse(localStorage.getItem('thsaas_settings') || '{}'); } catch { return {}; }
+    try {
+      const saved = JSON.parse(localStorage.getItem('thsaas_settings') || '{}');
+      return { GOOGLE_SHEETS_ID: DEFAULT_SHEETS_ID, ...saved };
+    } catch { return { GOOGLE_SHEETS_ID: DEFAULT_SHEETS_ID }; }
   }
   function saveLocalSettingsData(data) {
     localStorage.setItem('thsaas_settings', JSON.stringify(data));
