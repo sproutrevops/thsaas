@@ -462,6 +462,10 @@
       <span class="nav-icon">⚙️</span>
       <span class="nav-label">Settings</span>
     </div>
+    <div class="nav-item" data-page="docs" title="Documentation">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">Documentation</span>
+    </div>
   </nav>
   <div class="sidebar-footer">
     <span id="server-status-text" style="color:#4ade80">● Static Mode</span>
@@ -763,6 +767,218 @@
       </div>
     </div>
 
+    <!-- Documentation -->
+    <div id="page-docs" class="page">
+      <div style="max-width:860px;padding-bottom:40px">
+
+        <!-- Intro -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><h3>TH SAAS — Platform Overview</h3></div>
+          <div class="card-body" style="font-size:13.5px;line-height:1.75;color:var(--text)">
+            <p>TH SAAS is an internal data platform that connects <strong>Google Sheets</strong> and <strong>HubSpot CRM</strong> to give your team a unified view of MRR, headcount, and client movement across products and partners.</p>
+            <p style="margin-top:10px">The live site runs in <strong>Static Mode</strong> — all data is fetched directly from Google Sheets via the Sheets API using your Google login. No server is required.</p>
+            <div style="background:#eff6ff;border-left:3px solid var(--primary);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:12.5px">
+              <strong>Static Mode</strong> — you sign in with Google once; your OAuth token is used to read the spreadsheet in real time. Settings (Sheets ID, access rules) are stored in your browser's localStorage.
+            </div>
+          </div>
+        </div>
+
+        <!-- Pages reference -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><h3>Pages Reference</h3></div>
+          <div class="card-body" style="font-size:13.5px;line-height:1.75">
+
+            <!-- Dashboard -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">▣ Dashboard</h4>
+            <p>The home screen. Shows three summary cards at a glance:</p>
+            <ul style="margin:6px 0 10px 18px">
+              <li><strong>Sheet Tabs</strong> — how many tabs are found in the configured spreadsheet.</li>
+              <li><strong>HubSpot Companies</strong> — total companies pulled from HubSpot (not available in static mode).</li>
+              <li><strong>Server Status</strong> — shows <em>Static Mode</em> (always healthy in this version).</li>
+            </ul>
+            <p>The <strong>Connection Status</strong> section shows whether Google Sheets and HubSpot are reachable. Quick action buttons let you jump to any page.</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- PPM -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📦 Per Product Movement (PPM)</h4>
+            <p>The main data table. Displays every client–product combination with monthly <strong>HC (headcount)</strong> and computed <strong>MRR</strong> side by side.</p>
+
+            <p style="margin-top:10px"><strong>Setup — three sheets are required:</strong></p>
+            <ul style="margin:6px 0 10px 18px">
+              <li><strong>PPM Sheet</strong> — master client list with Partner, Client Name, Product, Application, Start Date, Renewal Date, and a base MRR column.</li>
+              <li><strong>HC Sheet</strong> — headcount data per client/app per period. Columns follow the pattern <code>HC YYYY-MM</code> or <code>MMM-YY</code>. A headcount &gt; 0 means the client is <em>active</em> that month.</li>
+              <li><strong>Unit Price Sheet</strong> — per-seat pricing per partner/product. Used to compute <em>MRR = HC × unit price</em> for each month.</li>
+            </ul>
+
+            <p><strong>Column auto-detection:</strong> the page tries to match columns by common names (e.g. "Partner", "Client Name", "Application"). Use the dropdowns in the config row to override if your headers differ.</p>
+
+            <p style="margin-top:10px"><strong>Filters:</strong></p>
+            <ul style="margin:6px 0 10px 18px">
+              <li><strong>Partner</strong> — filter the table to one partner.</li>
+              <li><strong>Client</strong> — filter to one client within the selected partner.</li>
+              <li><strong>Application search</strong> — free-text search across the Application column.</li>
+            </ul>
+
+            <p><strong>Table layout:</strong> the first four columns (Partner, Client Name, Start Date, Renewal Date) are <em>sticky</em> — they stay visible as you scroll right through the monthly data. Each month shows two sub-columns: <strong>HC</strong> and <strong>MRR</strong>. Rows are grouped by partner with a collapsible group header.</p>
+
+            <p><strong>Stats bar</strong> (above the table) shows the totals for the current filter: Total MRR, Total HC, Active Clients, and Partners.</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- SaaS Metrics -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📈 SaaS Metrics</h4>
+            <p>An MRR waterfall table — the standard SaaS cohort analysis. Each column is a month; rows show how MRR moved:</p>
+            <ul style="margin:6px 0 10px 18px">
+              <li><strong>Beginning MRR</strong> — ending MRR from the prior month.</li>
+              <li><strong>New Business</strong> — MRR from clients that were inactive last month and became active this month.</li>
+              <li><strong>Expansion</strong> — MRR increase from clients that were already active.</li>
+              <li><strong>Contraction</strong> — MRR decrease from clients that stayed active but reduced HC.</li>
+              <li><strong>Lost / Churned</strong> — MRR from clients that went from active to zero HC.</li>
+              <li><strong>Ending MRR</strong> — Beginning + New + Expansion − Contraction − Lost.</li>
+            </ul>
+            <p><strong>Source of truth:</strong> HC is the sole signal for client activity. A client is <em>active</em> when HC &gt; 0. MRR for each period is computed as <em>HC × unit price</em>.</p>
+            <p><strong>Tip:</strong> load <em>Per Product Movement</em> first — SaaS Metrics reuses PPM's loaded data. Use the <strong>Download CSV</strong> button to export the waterfall.</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- Company Movement -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">🏢 Company Movement</h4>
+            <p>A high-level MRR movement summary rolled up across all products and partners — the same waterfall logic as SaaS Metrics but presented as a compact overview chart. Useful for board-level or QBR reporting. Also reuses PPM data (load PPM first).</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- Google Sheets -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📊 Google Sheets</h4>
+            <p>A raw data browser. Lists all tabs in your spreadsheet; clicking a tab loads its contents as a paginated table. Useful for quickly verifying data without opening the spreadsheet.</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- HubSpot -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">🔶 HubSpot CRM</h4>
+            <p>Displays company records pulled from HubSpot. <strong>Not available in static mode</strong> — requires the Node.js server version running locally with a HubSpot Private App token configured in <code>.env</code>.</p>
+
+            <div class="divider" style="margin:16px 0"></div>
+
+            <!-- Settings -->
+            <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">⚙️ Settings</h4>
+            <ul style="margin:6px 0 10px 18px">
+              <li><strong>Spreadsheet URL or ID</strong> — paste the full Google Sheets URL or just the ID (the string between <code>/d/</code> and <code>/edit</code>). Saved in localStorage.</li>
+              <li><strong>HubSpot Access Token</strong> — Private App token (not used in static mode).</li>
+              <li><strong>Authorized Emails</strong> — comma-separated list of emails allowed to sign in. Leave blank to allow any Google account.</li>
+              <li><strong>Authorized Domain</strong> — allow everyone from a domain (e.g. <code>sprout.ph</code>). Leave blank to allow all domains.</li>
+              <li><strong>Connection Status</strong> — test whether Sheets and HubSpot are reachable with the current credentials.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Google Sheets setup -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><h3>Google Sheets Setup Guide</h3></div>
+          <div class="card-body" style="font-size:13.5px;line-height:1.75">
+            <p>Three sheets are required inside a single spreadsheet. Suggested tab names:</p>
+            <div style="overflow-x:auto">
+              <table style="font-size:12.5px;border-collapse:collapse;width:100%">
+                <thead>
+                  <tr style="background:#f1f5f9">
+                    <th style="padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)">Sheet / Tab</th>
+                    <th style="padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)">Purpose</th>
+                    <th style="padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)">Key columns</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:8px 12px;font-weight:600">PPM / Master</td>
+                    <td style="padding:8px 12px">Client–product list</td>
+                    <td style="padding:8px 12px;font-family:monospace;font-size:12px">Partner, Client Name, Product, Application, Start Date, Renewal Date, MRR</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:8px 12px;font-weight:600">HC / Headcount</td>
+                    <td style="padding:8px 12px">Monthly headcount per client</td>
+                    <td style="padding:8px 12px;font-family:monospace;font-size:12px">Client Name, Application, HC YYYY-MM …</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:8px 12px;font-weight:600">Unit Price</td>
+                    <td style="padding:8px 12px">Per-seat pricing per partner/product</td>
+                    <td style="padding:8px 12px;font-family:monospace;font-size:12px">Partner, Client Name, Application, Unit Price</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#fefce8;border-left:3px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-top:14px;font-size:12.5px">
+              <strong>Important:</strong> your Google account must have at least <em>Viewer</em> access to the spreadsheet. In static mode the sign-in OAuth token is used — no service account is needed.
+            </div>
+          </div>
+        </div>
+
+        <!-- Data logic -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-header"><h3>Data Logic &amp; Calculations</h3></div>
+          <div class="card-body" style="font-size:13.5px;line-height:1.75">
+            <h4 style="margin:0 0 8px;font-size:13px">Active vs Inactive clients</h4>
+            <p>A client is considered <strong>active</strong> in a given month when their HC value is <strong>greater than zero</strong> in the HC sheet for that period. HC = 0 (or blank) means inactive / churned for that month.</p>
+
+            <h4 style="margin:12px 0 8px;font-size:13px">Computed MRR</h4>
+            <p>Monthly MRR per client is not taken directly from the PPM MRR column — it is <strong>computed</strong> as:</p>
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:monospace;font-size:13px;margin:6px 0 10px">
+              MRR (month) = HC (month) × Unit Price (from Unit Price sheet)
+            </div>
+            <p>The base MRR column in the PPM sheet is used as a reference/fallback only.</p>
+
+            <h4 style="margin:12px 0 8px;font-size:13px">SaaS Metrics categories</h4>
+            <ul style="margin:6px 0 0 18px">
+              <li><strong>New Business</strong> — HC was 0 last month, HC &gt; 0 this month → entire MRR is New.</li>
+              <li><strong>Lost / Churn</strong> — HC was &gt; 0 last month, HC = 0 this month → entire prior-month MRR is Lost.</li>
+              <li><strong>Expansion</strong> — client remained active (HC &gt; 0 both months) and MRR increased.</li>
+              <li><strong>Contraction</strong> — client remained active and MRR decreased.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="card">
+          <div class="card-header"><h3>Troubleshooting</h3></div>
+          <div class="card-body" style="font-size:13.5px;line-height:1.75">
+            <table style="font-size:12.5px;border-collapse:collapse;width:100%">
+              <thead>
+                <tr style="background:#f1f5f9">
+                  <th style="padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)">Symptom</th>
+                  <th style="padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)">Likely cause &amp; fix</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px">Dashboard shows <em>Not configured</em></td>
+                  <td style="padding:8px 12px">Go to Settings and verify the Spreadsheet ID is saved. The default ID is pre-filled but can be overwritten by a prior blank save.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px">PPM loads no data / columns are missing</td>
+                  <td style="padding:8px 12px">Select the correct sheet from the PPM Sheet dropdown, then click <strong>Load</strong>. Use the column dropdowns to map headers manually if auto-detect fails.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px">SaaS Metrics shows nothing</td>
+                  <td style="padding:8px 12px">PPM must be loaded first. Navigate to Per Product Movement, select sheets, click Load, then return to SaaS Metrics and click Refresh.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px">SaaS Metrics totals don't match Company Movement</td>
+                  <td style="padding:8px 12px">Both use the same data engine. If they differ, reload PPM to refresh the cache, then recalculate both pages.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:8px 12px">Sign-in button does nothing</td>
+                  <td style="padding:8px 12px">Your browser may be blocking the Google popup. Allow popups for this site in browser settings and try again.</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 12px">Stale data after spreadsheet changes</td>
+                  <td style="padding:8px 12px">Click the <strong>↻ Refresh</strong> or <strong>↻ Reload Tabs</strong> button on the relevant page. Each button re-fetches directly from the Sheets API.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -916,7 +1132,7 @@
   };
 
   // ── Navigation ──
-  const pageTitles = { dashboard: 'Dashboard', sheets: 'Google Sheets', hubspot: 'HubSpot CRM', ppm: 'Per Product Movement', 'saas-metrics': 'SaaS Metrics Movement', 'company-movement': 'Company Movement', settings: 'Settings' };
+  const pageTitles = { dashboard: 'Dashboard', sheets: 'Google Sheets', hubspot: 'HubSpot CRM', ppm: 'Per Product Movement', 'saas-metrics': 'SaaS Metrics Movement', 'company-movement': 'Company Movement', settings: 'Settings', docs: 'Documentation' };
 
   function navigateTo(page) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
