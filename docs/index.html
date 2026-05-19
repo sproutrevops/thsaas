@@ -2246,7 +2246,7 @@
 
   function downloadMergedCompanyCSV() {
     if (!mm.records.length || !mm.mrrCols.length) return;
-    function csvCell(v) { const s = String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`':s; }
+    function csvCell(v) { const s = String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:`${s}`; }
     const cc = mm.colClient, cp = mm.colPartner;
     const periods = mm.mrrCols.map(mrrCol => {
       const ym = periodToYM(mrrCol);
