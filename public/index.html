@@ -1282,7 +1282,8 @@
       if (upTab) upSel.value = upTab.title;
 
       const ppmTab = tabs.find(t => t.title === savedPpm) ||
-                     tabs.find(t => /ppm|per.?product|movement/i.test(t.title)) ||
+                     tabs.find(t => /ppm|per.?product/i.test(t.title)) ||
+                     tabs.find(t => /movement/i.test(t.title) && !/merged/i.test(t.title)) ||
                      tabs[0];
 
       // Load HC and Unit Price first, then PPM data
