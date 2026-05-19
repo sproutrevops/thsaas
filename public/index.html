@@ -396,6 +396,10 @@
     .sm-stat { background: var(--card-bg); border: 1px solid var(--border); border-radius: 9px; padding: 10px 15px; box-shadow: var(--shadow); min-width: 135px; }
     .sm-stat .n { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; }
     .sm-stat .l { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+    .sm-tab-bar { display: flex; gap: 4px; }
+    .sm-tab { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .sm-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .sm-tab:hover:not(.active) { background: var(--bg-secondary); }
   </style>
 </head>
 <body>
@@ -528,6 +532,12 @@
 
     <!-- Company Movement -->
     <div id="page-company-movement" class="page">
+      <div class="toolbar">
+        <div class="sm-tab-bar">
+          <button class="sm-tab active" data-tab="merged" onclick="switchCMTab('merged')">Merged Movement</button>
+          <button class="sm-tab" data-tab="computed" onclick="switchCMTab('computed')">Computed</button>
+        </div>
+      </div>
       <div id="overall-movement-content">
         <div class="loading-state" style="color:var(--text-muted)">Loading…</div>
       </div>
@@ -643,6 +653,10 @@
     <!-- SaaS Metrics -->
     <div id="page-saas-metrics" class="page">
       <div class="toolbar">
+        <div class="sm-tab-bar">
+          <button class="sm-tab" data-tab="computed" onclick="switchSMTab('computed')">Computed</button>
+          <button class="sm-tab active" data-tab="merged" onclick="switchSMTab('merged')">Merged Movement</button>
+        </div>
         <button class="btn btn-secondary btn-sm" onclick="loadSaasMetrics()">↻ Refresh</button>
         <button class="btn btn-secondary btn-sm" onclick="downloadSaasMetricsCSV()">⬇ Download CSV</button>
       </div>
@@ -1201,6 +1215,9 @@
     upData: [], upMap: {}, upPartnerMap: {},
     upColCompany: '', upColPartner: '', upAppCols: []
   };
+  const mm = { records: [], periodCols: [], mrrCols: [], hcCols: [], colPartner: null, colClient: null };
+  let smActiveTab = 'merged';
+  let cmActiveTab = 'merged';
 
   function fmtNum(n) {
     if (n === '' || n === null || n === undefined) return '';
@@ -1249,18 +1266,29 @@
       hcSel.innerHTML = tabOpts;
       upSel.innerHTML = tabOpts;
 
-      const hcTab = tabs.find(t => t.title.toLowerCase().includes('headcount'));
+      // Restore saved selections; fall back to keyword auto-detection
+      const savedPpm = localStorage.getItem('ppm_sheet');
+      const savedHc  = localStorage.getItem('ppm_hc_sheet');
+      const savedUp  = localStorage.getItem('ppm_up_sheet');
+
+      const hcTab = tabs.find(t => t.title === savedHc) ||
+                    tabs.find(t => t.title.toLowerCase().includes('headcount'));
       if (hcTab) hcSel.value = hcTab.title;
 
-      const upTab = tabs.find(t =>
-        t.title.toLowerCase().includes('unit price') || t.title.toLowerCase().includes('unitprice')
-      );
+      const upTab = tabs.find(t => t.title === savedUp) ||
+                    tabs.find(t =>
+                      t.title.toLowerCase().includes('unit price') || t.title.toLowerCase().includes('unitprice')
+                    );
       if (upTab) upSel.value = upTab.title;
+
+      const ppmTab = tabs.find(t => t.title === savedPpm) ||
+                     tabs.find(t => /ppm|per.?product|movement/i.test(t.title)) ||
+                     tabs[0];
 
       // Load HC and Unit Price first, then PPM data
       if (hcSel.value) await loadHCData();
       if (upSel.value) await loadUPData();
-      if (tabs.length > 0) { sel.value = tabs[0].title; await loadPPM(); }
+      if (ppmTab) { sel.value = ppmTab.title; await loadPPM(); }
     } catch (e) {
       sel.innerHTML = `<option value="">Error: ${e.message}</option>`;
       throw e;
@@ -1445,6 +1473,11 @@
       document.getElementById('ppm-col-product').value = ppm.colProduct;
       document.getElementById('ppm-col-app').value     = ppm.colApp;
       document.getElementById('ppm-col-mrr').value     = ppm.colMrr;
+
+      // Persist sheet selections so Company Movement can auto-load on refresh
+      localStorage.setItem('ppm_sheet',    document.getElementById('ppm-sheet-select').value);
+      localStorage.setItem('ppm_hc_sheet', document.getElementById('hc-sheet-select').value);
+      localStorage.setItem('ppm_up_sheet', document.getElementById('up-sheet-select').value);
 
       populatePPMFilters();
       renderPPM();
@@ -1644,17 +1677,119 @@
   }
 
   // ── Company Movement ──
-  function loadCompanyMovement() {
-    if (ppm.rawData.length && ppm.hcPeriodCols.length) {
-      renderOverallMovement();
-    } else {
-      const el = document.getElementById('overall-movement-content');
-      el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
-      loadPPMSheetList()
-        .then(() => renderOverallMovement())
-        .catch(e => {
-          el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
-        });
+  function switchCMTab(tab) {
+    cmActiveTab = tab;
+    document.querySelectorAll('.cm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    // also sync the sm-tab-bar buttons in the CM page
+    document.querySelectorAll('#page-company-movement .sm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    loadCompanyMovement();
+  }
+
+  function renderMergedCompanyMovement() {
+    const el = document.getElementById('overall-movement-content');
+    if (!mm.records.length || !mm.mrrCols.length) {
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No data in the Merged Movement sheet.</p></div>';
+      return;
+    }
+    const cc = mm.colClient, cp = mm.colPartner;
+    const hasHC = mm.hcCols.length > 0;
+
+    // Pair each MRR col with its matching HC col by period
+    const periods = mm.mrrCols.map(mrrCol => {
+      const ym = periodToYM(mrrCol);
+      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
+      return { mrrCol, hcCol };
+    });
+
+    const rows = mm.records.filter(r => (r[cc] || '').trim());
+    rows.sort((a, b) => {
+      const s = (a[cp] || '').localeCompare(b[cp] || '');
+      return s !== 0 ? s : (a[cc] || '').localeCompare(b[cc] || '');
+    });
+
+    // Totals
+    const totals = periods.map(({ mrrCol, hcCol }) => {
+      let sumMrr = 0, sumHc = 0;
+      for (const row of rows) {
+        const mrr = parseFloat(String(row[mrrCol] || '').replace(/[,$\s]/g, ''));
+        if (!isNaN(mrr)) sumMrr += mrr;
+        if (hcCol) { const hc = parseFloat(String(row[hcCol] || '').replace(/[,$\s]/g, '')); if (!isNaN(hc)) sumHc += hc; }
+      }
+      return { mrr: sumMrr, hc: sumHc };
+    });
+
+    // Year groups
+    const yearGroups = {};
+    for (const { mrrCol } of periods) {
+      const yr = (mrrCol.match(/\d{4}/) || ['?'])[0];
+      if (!yearGroups[yr]) yearGroups[yr] = [];
+      yearGroups[yr].push(mrrCol);
+    }
+    const sortedYears = Object.keys(yearGroups).sort();
+    const colSpan = hasHC ? 2 : 1;
+    const totalCols = 2 + periods.length * colSpan;
+
+    let r1 = `<th rowspan="3">Partner</th><th rowspan="3">Client Name</th>`;
+    r1 += sortedYears.map(yr => `<th colspan="${yearGroups[yr].length * colSpan}" class="th-group">${yr}</th>`).join('');
+
+    const r2 = periods.map(({ mrrCol }) => {
+      const abbr = mrrCol.replace(/\s*\d{4}\s*/,'').replace(/mrr/i,'').trim().slice(0,3);
+      return `<th colspan="${colSpan}" class="th-sub th-month-grp">${esc(abbr)}</th>`;
+    }).join('');
+
+    const r3 = periods.map(() =>
+      `<th class="th-sub th-mrr-month">MRR</th>${hasHC ? '<th class="th-sub th-month">HC</th>' : ''}`
+    ).join('');
+
+    let totalTds = `<td>TOTAL</td><td></td>`;
+    for (const t of totals) {
+      totalTds += `<td class="col-mrr th-mrr-month">${esc(fmtNum(t.mrr))}</td>`;
+      if (hasHC) totalTds += `<td class="col-hc th-month">${esc(fmtNum(t.hc))}</td>`;
+    }
+
+    let html = '', lastPartner = '';
+    for (const row of rows) {
+      const partner = row[cp] || '', client = row[cc] || '';
+      if (partner !== lastPartner) {
+        html += `<tr class="group-header-partner"><td colspan="${totalCols}">▸ ${esc(partner)}</td></tr>`;
+        lastPartner = partner;
+      }
+      let tds = `<td title="${esc(partner)}">${esc(partner)}</td><td title="${esc(client)}">${esc(client)}</td>`;
+      for (const { mrrCol, hcCol } of periods) {
+        const mrrRaw = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+        const mrr = parseFloat(mrrRaw);
+        const mrrStr = isNaN(mrr) ? '' : fmtNum(mrr);
+        tds += `<td class="col-mrr th-mrr-month" title="${esc(mrrStr)}">${esc(mrrStr)}</td>`;
+        if (hasHC) {
+          const hcRaw = hcCol ? String(row[hcCol] || '').replace(/[,$\s]/g, '') : '';
+          const hc = parseFloat(hcRaw);
+          tds += `<td class="col-hc th-month">${isNaN(hc) ? '' : esc(String(hc))}</td>`;
+        }
+      }
+      html += `<tr>${tds}</tr>`;
+    }
+
+    const omWrap = document.createElement('div');
+    omWrap.className = 'table-wrap';
+    omWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead><tr>${r1}</tr><tr>${r2}</tr><tr>${r3}</tr></thead><tbody><tr class="om-totals-row">${totalTds}</tr>${html}</tbody></table>`;
+    el.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-secondary btn-sm" onclick="downloadOverallMovementCSV()">⬇ Download CSV</button></div>`;
+    el.appendChild(omWrap);
+    setTimeout(() => fixStickyHeaders(omWrap), 0);
+  }
+
+  async function loadCompanyMovement() {
+    const el = document.getElementById('overall-movement-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+    try {
+      if (cmActiveTab === 'merged') {
+        await loadMergedMovementData();
+        renderMergedCompanyMovement();
+      } else {
+        if (!ppm.rawData.length || !ppm.hcPeriodCols.length) await loadPPMSheetList();
+        renderOverallMovement();
+      }
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
     }
   }
 
@@ -1806,6 +1941,7 @@
   }
 
   function downloadOverallMovementCSV() {
+    if (cmActiveTab === 'merged') { downloadMergedCompanyCSV(); return; }
     if (!ppm.rawData.length || !ppm.hcPeriodCols.length) return;
 
     const cc  = ppm.colClient;
@@ -1917,7 +2053,114 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadMergedCompanyCSV() {
+    if (!mm.records.length || !mm.mrrCols.length) return;
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+    const cc = mm.colClient, cp = mm.colPartner;
+    const periods = mm.mrrCols.map(mrrCol => {
+      const ym = periodToYM(mrrCol);
+      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
+      return { mrrCol, hcCol };
+    });
+    const hdrs = ['Partner', 'Client Name', ...periods.flatMap(({ mrrCol, hcCol }) => hcCol ? [mrrCol, hcCol] : [mrrCol])];
+    const rows = mm.records.filter(r => (r[cc] || '').trim())
+      .sort((a, b) => { const s = (a[cp]||'').localeCompare(b[cp]||''); return s !== 0 ? s : (a[cc]||'').localeCompare(b[cc]||''); })
+      .map(row => [
+        row[cp] || '', row[cc] || '',
+        ...periods.flatMap(({ mrrCol, hcCol }) => {
+          const mrr = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+          const hc  = hcCol ? String(row[hcCol] || '').replace(/[,$\s]/g, '') : null;
+          return hc !== null ? [mrr, hc] : [mrr];
+        })
+      ].map(csvCell).join(','));
+    const csv = [hdrs.map(csvCell).join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `merged-movement-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // ── SaaS Metrics Movement ──
+
+  function switchSMTab(tab) {
+    smActiveTab = tab;
+    document.querySelectorAll('.sm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    loadSaasMetrics();
+  }
+
+  async function loadMergedMovementData() {
+    const { tabs } = await apiFetch('/api/sheets/tabs');
+    const tab = tabs.find(t => /merged.?movement/i.test(t.title)) ||
+                tabs.find(t => /merged/i.test(t.title));
+    if (!tab) throw new Error('No "Merged Movement" tab found in the spreadsheet');
+    const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(tab.title)}`);
+    const records = data.records || [];
+    const headers = records.length ? Object.keys(records[0]) : [];
+    mm.colPartner = detectCol(headers, ['partner']);
+    mm.colClient  = detectCol(headers, ['client name', 'client', 'company']);
+    const allMonthCols = headers.filter(isMonthCol);
+    const mrrCols = allMonthCols.filter(h => /mrr/i.test(h));
+    const hcCols  = allMonthCols.filter(h => /\bhc\b/i.test(h));
+    mm.mrrCols    = (mrrCols.length ? mrrCols : allMonthCols.filter(h => !/\bhc\b/i.test(h)))
+      .sort((a, b) => parsePeriod(a) - parsePeriod(b));
+    mm.hcCols     = hcCols.sort((a, b) => parsePeriod(a) - parsePeriod(b));
+    mm.periodCols = mm.mrrCols; // used by SaaS Metrics computation
+    mm.records    = records;
+  }
+
+  function computeMergedMetrics() {
+    if (!mm.records.length || !mm.periodCols.length) return null;
+    const cp = mm.colPartner;
+    const cc = mm.colClient;
+    const clientList = mm.records
+      .filter(row => (row[cc] || '').trim())
+      .map(row => {
+        const mrrByPeriod = {};
+        for (const col of mm.periodCols) {
+          const raw = String(row[col] || '').replace(/[,$\s]/g, '');
+          const v = parseFloat(raw);
+          mrrByPeriod[col] = isNaN(v) || v < 0 ? 0 : v;
+        }
+        return { partner: row[cp] || '', client: row[cc] || '', mrrByPeriod };
+      });
+
+    const allPeriods = mm.periodCols;
+    let startIdx = 1;
+    const julyIdx = allPeriods.findIndex(p => { const ym = periodToYM(p); return ym && ym.year === 2024 && ym.month === 6; });
+    if (julyIdx >= 0) startIdx = julyIdx + 1;
+    if (startIdx >= allPeriods.length) startIdx = 1;
+    const displayPeriods = allPeriods.slice(startIdx);
+
+    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+      const prevPeriod = allPeriods[startIdx + i - 1];
+      let beginningMrr = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      for (const client of clientList) {
+        const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
+        const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
+        beginningMrr += mrrPrev;
+        const wasActive = mrrPrev > 0;
+        const isActive  = mrrCurr > 0;
+        if (wasActive && !isActive)          lostClients += mrrPrev;
+        else if (!wasActive && isActive)     newBusiness += mrrCurr;
+        else if (wasActive && isActive) {
+          if (mrrCurr > mrrPrev)             expansion   += mrrCurr - mrrPrev;
+          else if (mrrCurr < mrrPrev)        contraction += mrrPrev - mrrCurr;
+        }
+      }
+      return { period: currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
+               endingMrr: beginningMrr + newBusiness + expansion - contraction - lostClients };
+    });
+
+    return { displayPeriods, metricsPerPeriod };
+  }
 
   function periodToYM(col) {
     const yr = parseInt((col.match(/\d{4}/) || ['0'])[0]);
@@ -2073,31 +2316,38 @@
 
   async function loadSaasMetrics() {
     const el = document.getElementById('saas-metrics-content');
-    if (ppm.rawData.length && ppm.hcPeriodCols.length) {
-      renderSaasMetrics();
-    } else {
-      el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
-      try {
-        await loadPPMSheetList();
-        renderSaasMetrics();
-      } catch (e) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+    try {
+      if (smActiveTab === 'merged') {
+        await loadMergedMovementData();
+      } else {
+        if (!ppm.rawData.length || !ppm.hcPeriodCols.length) await loadPPMSheetList();
       }
+      renderSaasMetrics();
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
     }
   }
 
   function renderSaasMetrics() {
     const el = document.getElementById('saas-metrics-content');
 
-    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Go to <strong>Per Product Movement</strong> and click <strong>↻ Tabs</strong> to load data first.</p></div>';
+    const ready = smActiveTab === 'merged'
+      ? mm.records.length > 0 && mm.periodCols.length > 0
+      : ppm.rawData.length > 0 && ppm.hcPeriodCols.length > 0;
+
+    if (!ready) {
+      const msg = smActiveTab === 'merged'
+        ? 'Merged Movement sheet could not be loaded. Check that a tab named "Merged Movement" exists.'
+        : 'Go to <strong>Per Product Movement</strong> and click <strong>↻ Tabs</strong> to load data first.';
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>${msg}</p></div>`;
       document.getElementById('sm-stats-bar').innerHTML = '';
       return;
     }
 
-    const result = computeSaasMetrics();
+    const result = smActiveTab === 'merged' ? computeMergedMetrics() : computeSaasMetrics();
     if (!result || !result.displayPeriods.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Not enough periods to compute metrics. Ensure the HC sheet covers at least 2 periods including July 2024.</p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Not enough periods to compute metrics. Ensure the sheet covers at least 2 month columns.</p></div>';
       document.getElementById('sm-stats-bar').innerHTML = '';
       return;
     }
@@ -2190,8 +2440,7 @@
   }
 
   function downloadSaasMetricsCSV() {
-    if (!ppm.rawData.length || !ppm.hcPeriodCols.length) return;
-    const result = computeSaasMetrics();
+    const result = smActiveTab === 'merged' ? computeMergedMetrics() : computeSaasMetrics();
     if (!result) return;
     const { displayPeriods, metricsPerPeriod } = result;
 
