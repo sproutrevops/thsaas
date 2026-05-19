@@ -1830,12 +1830,14 @@
     }
 
     // Compute per-month Total MRR and MAX HC per client
+    // If no apps were detected, fall back to a no-app lookup
     const clientRows = [];
     for (const [, e] of clientMap) {
+      const appsToCheck = e.apps.length ? e.apps : [''];
       const monthData = {};
       for (const col of ppm.hcPeriodCols) {
         let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
-        for (const app of e.apps) {
+        for (const app of appsToCheck) {
           const hcNum = parseFloat(lookupHC(e.client, app, col));
           if (!isNaN(hcNum) && hcNum > 0) {
             hasHc = true;
@@ -2228,10 +2230,11 @@
     // Pre-compute per-client MRR and HC per period
     const clientList = [];
     for (const [, e] of clientMap) {
+      const appsToCheck = e.apps.length ? e.apps : [''];
       const mrrByPeriod = {}, hcByPeriod = {};
       for (const col of ppm.hcPeriodCols) {
         let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
-        for (const app of e.apps) {
+        for (const app of appsToCheck) {
           const hcNum = parseFloat(lookupHC(e.client, app, col));
           if (!isNaN(hcNum) && hcNum > 0) {
             hasHc = true;
