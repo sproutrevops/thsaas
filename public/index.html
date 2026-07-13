@@ -2449,12 +2449,11 @@
     const displayPeriods = allPeriods.slice(startIdx);
 
     const metricsPerPeriod = [];
-    let prevEndingClients = null;
     for (let i = 0; i < displayPeriods.length; i++) {
       const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
       let rawBeginning = 0, rawEnding = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
-      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
+      let rawBeginningClients = 0, rawEndingClients = 0, newClients = 0, lostClientCount = 0;
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
         const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
@@ -2465,6 +2464,7 @@
         const wasActive = hcPrev > 0;
         const isActive  = hcCurr > 0;
         if (wasActive) rawBeginningClients++;
+        if (isActive)  rawEndingClients++;
         if (wasActive && !isActive)        { lostClients += mrrPrev; lostClientCount++; }
         else if (!wasActive && isActive)   { newBusiness += mrrCurr; newClients++; }
         else if (wasActive && isActive) {
@@ -2472,14 +2472,11 @@
           else if (mrrCurr < mrrPrev)        contraction += mrrPrev - mrrCurr;
         }
       }
-      // Use raw column sums so Beginning/Ending always match sheet totals exactly.
-      // They naturally chain: rawEnding[N] === rawBeginning[N+1].
-      const beginningMrr = rawBeginning;
-      const endingMrr    = rawEnding;
-
-      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
-      const endingClients = beginningClients + newClients - lostClientCount;
-      prevEndingClients = endingClients;
+      // Raw sums: Beginning/Ending match sheet column totals and naturally chain.
+      const beginningMrr     = rawBeginning;
+      const endingMrr        = rawEnding;
+      const beginningClients = rawBeginningClients;
+      const endingClients    = rawEndingClients;
 
       metricsPerPeriod.push({ period: currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
                endingMrr, beginningClients, newClients, lostClientCount, endingClients });
@@ -2591,13 +2588,12 @@
     const displayPeriods = allPeriods.slice(startIdx);
 
     const metricsPerPeriod = [];
-    let prevEndingClients = null;
     for (let i = 0; i < displayPeriods.length; i++) {
       const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
 
       let rawBeginning = 0, rawEnding = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
-      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
+      let rawBeginningClients = 0, rawEndingClients = 0, newClients = 0, lostClientCount = 0;
 
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
@@ -2612,6 +2608,7 @@
         const isActive  = hcCurr > 0;
 
         if (wasActive) rawBeginningClients++;
+        if (isActive)  rawEndingClients++;
 
         const isLost = wasActive && !isActive;
         const isNew  = !wasActive && isActive;
@@ -2628,14 +2625,11 @@
         }
       }
 
-      // Use raw column sums so Beginning/Ending always match sheet totals exactly.
-      // They naturally chain: rawEnding[N] === rawBeginning[N+1].
-      const beginningMrr = rawBeginning;
-      const endingMrr    = rawEnding;
-
-      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
-      const endingClients = beginningClients + newClients - lostClientCount;
-      prevEndingClients = endingClients;
+      // Raw sums: Beginning/Ending match sheet column totals and naturally chain.
+      const beginningMrr     = rawBeginning;
+      const endingMrr        = rawEnding;
+      const beginningClients = rawBeginningClients;
+      const endingClients    = rawEndingClients;
 
       metricsPerPeriod.push({
         period: currPeriod,
