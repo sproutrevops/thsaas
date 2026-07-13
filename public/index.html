@@ -2387,7 +2387,28 @@
       .sort((a, b) => parsePeriod(a) - parsePeriod(b));
     mm.hcCols     = hcCols.sort((a, b) => parsePeriod(a) - parsePeriod(b));
     mm.periodCols = mm.mrrCols; // used by SaaS Metrics computation
-    mm.records    = records;
+
+    // Strip any aggregate/totals rows. A row is a totals row if:
+    //   (a) its client/partner field contains "total" or "grand", OR
+    //   (b) it is the first data row and its MRR for the first period is
+    //       within 5% of the sum of all subsequent rows (i.e. it IS the sum).
+    function parseMrr(row, col) {
+      const v = parseFloat(String(row[col] || '').replace(/[,$\s]/g, ''));
+      return isNaN(v) || v < 0 ? 0 : v;
+    }
+    const firstMrrCol = mm.mrrCols[0];
+    let filtered = records;
+    if (firstMrrCol && records.length > 1) {
+      const r0 = parseMrr(records[0], firstMrrCol);
+      const restSum = records.slice(1).reduce((s, r) => s + parseMrr(r, firstMrrCol), 0);
+      const nameMatch = (r) => /\btotal\b|\bgrand\b/i.test((r[mm.colClient] || '') + ' ' + (r[mm.colPartner] || ''));
+      filtered = records.filter((r, i) => {
+        if (nameMatch(r)) return false;
+        if (i === 0 && r0 > 0 && restSum > 0 && Math.abs(r0 - restSum) / restSum < 0.05) return false;
+        return true;
+      });
+    }
+    mm.records = filtered;
   }
 
   function computeMergedMetrics() {
