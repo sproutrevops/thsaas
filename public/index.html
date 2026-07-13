@@ -2438,11 +2438,10 @@
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
         const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
         rawBeginning += mrrPrev;
-        // Use HC > 0 for active status if HC columns exist, otherwise fall back to MRR > 0
         const hcCurr = hasHC ? (client.hcByPeriod[currPeriod] || 0) : mrrCurr;
         const hcPrev = hasHC ? (prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0) : mrrPrev;
-        const wasActive = hcPrev > 0;
-        const isActive  = hcCurr > 0;
+        const wasActive = hcPrev > 0 || mrrPrev > 0;
+        const isActive  = hcCurr > 0 || mrrCurr > 0;
         if (wasActive) rawBeginningClients++;
         if (wasActive && !isActive)        { lostClients += mrrPrev; lostClientCount++; }
         else if (!wasActive && isActive)   { newBusiness += mrrCurr; newClients++; }
@@ -2586,8 +2585,8 @@
 
         rawBeginning += mrrPrev;
 
-        const wasActive = hcPrev > 0;
-        const isActive  = hcCurr > 0;
+        const wasActive = hcPrev > 0 || mrrPrev > 0;
+        const isActive  = hcCurr > 0 || mrrCurr > 0;
 
         if (wasActive) rawBeginningClients++;
 
