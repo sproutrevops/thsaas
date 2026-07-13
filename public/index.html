@@ -2428,16 +2428,17 @@
     const displayPeriods = allPeriods.slice(startIdx);
 
     const metricsPerPeriod = [];
-    let prevEndingMrr = null, prevEndingClients = null;
+    let prevEndingClients = null;
     for (let i = 0; i < displayPeriods.length; i++) {
       const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
-      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginning = 0, rawEnding = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
       let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
         const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
         rawBeginning += mrrPrev;
+        rawEnding    += mrrCurr;
         const hcCurr = hasHC ? (client.hcByPeriod[currPeriod] || 0) : mrrCurr;
         const hcPrev = hasHC ? (prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0) : mrrPrev;
         const wasActive = hcPrev > 0 || mrrPrev > 0;
@@ -2450,10 +2451,10 @@
           else if (mrrCurr < mrrPrev)        contraction += mrrPrev - mrrCurr;
         }
       }
-      // Chain: beginning = previous ending (first period uses raw)
-      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
-      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
-      prevEndingMrr = endingMrr;
+      // Use raw column sums so Beginning/Ending always match sheet totals exactly.
+      // They naturally chain: rawEnding[N] === rawBeginning[N+1].
+      const beginningMrr = rawBeginning;
+      const endingMrr    = rawEnding;
 
       const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
       const endingClients = beginningClients + newClients - lostClientCount;
@@ -2569,12 +2570,12 @@
     const displayPeriods = allPeriods.slice(startIdx);
 
     const metricsPerPeriod = [];
-    let prevEndingMrr = null, prevEndingClients = null;
+    let prevEndingClients = null;
     for (let i = 0; i < displayPeriods.length; i++) {
       const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
 
-      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginning = 0, rawEnding = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
       let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
 
       for (const client of clientList) {
@@ -2584,6 +2585,7 @@
         const hcPrev  = prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0;
 
         rawBeginning += mrrPrev;
+        rawEnding    += mrrCurr;
 
         const wasActive = hcPrev > 0 || mrrPrev > 0;
         const isActive  = hcCurr > 0 || mrrCurr > 0;
@@ -2595,14 +2597,7 @@
 
         if (isLost) {
           lostClientCount++;
-          let lastMrr = mrrPrev;
-          if (!lastMrr) {
-            for (let j = startIdx + i - 2; j >= 0; j--) {
-              const v = client.mrrByPeriod[allPeriods[j]];
-              if (v && v > 0) { lastMrr = v; break; }
-            }
-          }
-          lostClients += lastMrr;
+          lostClients += mrrPrev;
         } else if (isNew && isActive) {
           newClients++;
           newBusiness += mrrCurr;
@@ -2612,10 +2607,10 @@
         }
       }
 
-      // Chain: beginning = previous ending (first period uses raw)
-      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
-      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
-      prevEndingMrr = endingMrr;
+      // Use raw column sums so Beginning/Ending always match sheet totals exactly.
+      // They naturally chain: rawEnding[N] === rawBeginning[N+1].
+      const beginningMrr = rawBeginning;
+      const endingMrr    = rawEnding;
 
       const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
       const endingClients = beginningClients + newClients - lostClientCount;
