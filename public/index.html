@@ -304,6 +304,8 @@
       font-size: 12px; color: var(--text); background: #fff; outline: none; font-family: inherit;
     }
     .ppm-filter-bar select:focus, .ppm-filter-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .ppm-filter-bar .filter-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; align-self: center; }
+    .row-totals td { background: var(--hover-bg, #f1f5fb); font-weight: 600; border-top: 2px solid var(--border); }
 
     /* ── PPM stats ── */
     .ppm-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -537,6 +539,7 @@
           <button class="sm-tab active" data-tab="merged" onclick="switchCMTab('merged')">Merged Movement</button>
           <button class="sm-tab" data-tab="computed" onclick="switchCMTab('computed')">Computed</button>
         </div>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="refreshCompanyMovement()">↻ Refresh</button>
       </div>
       <div id="overall-movement-content">
         <div class="loading-state" style="color:var(--text-muted)">Loading…</div>
@@ -592,6 +595,11 @@
             <label>Unit Price Sheet</label>
             <select id="up-sheet-select" onchange="loadUPData()"><option value="">— auto —</option></select>
           </div>
+          <div class="cfg-group">
+            <label>Client List Sheet</label>
+            <select id="cl-sheet-select" onchange="loadCLData()"><option value="">— auto —</option></select>
+            <span id="cl-status" class="status-pill pill-muted" style="display:none"></span>
+          </div>
           <div class="cfg-actions">
             <button class="btn btn-primary btn-sm" onclick="loadPPM()">▶ Load</button>
             <button class="btn btn-secondary btn-sm" onclick="loadPPMSheetList()">↻ Reload Tabs</button>
@@ -634,8 +642,15 @@
           <option value="">All Clients</option>
         </select>
         <input type="text" id="ppm-search" placeholder="Search application…" style="width:180px" />
+        <div class="filter-sep"></div>
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">From</label>
+        <select id="ppm-date-from" style="min-width:110px"><option value="">— start —</option></select>
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">To</label>
+        <select id="ppm-date-to" style="min-width:110px"><option value="">— end —</option></select>
+        <div class="filter-sep"></div>
         <button class="btn btn-secondary btn-sm" onclick="renderPPM()">Apply</button>
         <button class="btn btn-secondary btn-sm" onclick="clearPPMFilters()">✕ Clear</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPPMCSV()">⬇ CSV</button>
         <span id="ppm-count-label" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
       </div>
 
@@ -1211,9 +1226,11 @@
     colPartner: '', colClient: '', colProduct: '', colApp: '', colMrr: '',
     colStartDate: '', colRenewalDate: '', colType: '',
     hcData: [], hcMap: {}, hcPeriodCols: [],
-    hcColClient: '', hcColProduct: '',
+    hcColClient: '', hcColProduct: '', hcColEntity: '',
     upData: [], upMap: {}, upPartnerMap: {},
-    upColCompany: '', upColPartner: '', upAppCols: []
+    upColCompany: '', upColPartner: '', upAppCols: [],
+    clData: [], clMap: {},
+    clColClient: '', clColStart: '', clColRenewal: '', clColTerminate: ''
   };
   const mm = { records: [], periodCols: [], mrrCols: [], hcCols: [], colPartner: null, colClient: null };
   let smActiveTab = 'merged';
@@ -1257,6 +1274,7 @@
     const sel   = document.getElementById('ppm-sheet-select');
     const hcSel = document.getElementById('hc-sheet-select');
     const upSel = document.getElementById('up-sheet-select');
+    const clSel = document.getElementById('cl-sheet-select');
     sel.innerHTML = '<option value="">Loading…</option>';
     try {
       const { tabs } = await apiFetch('/api/sheets/tabs');
@@ -1265,11 +1283,13 @@
       sel.innerHTML   = tabOpts;
       hcSel.innerHTML = tabOpts;
       upSel.innerHTML = tabOpts;
+      clSel.innerHTML = tabOpts;
 
       // Restore saved selections; fall back to keyword auto-detection
       const savedPpm = localStorage.getItem('ppm_sheet');
       const savedHc  = localStorage.getItem('ppm_hc_sheet');
       const savedUp  = localStorage.getItem('ppm_up_sheet');
+      const savedCl  = localStorage.getItem('ppm_cl_sheet');
 
       const hcTab = tabs.find(t => t.title === savedHc) ||
                     tabs.find(t => t.title.toLowerCase().includes('headcount'));
@@ -1281,14 +1301,22 @@
                     );
       if (upTab) upSel.value = upTab.title;
 
-      const ppmTab = tabs.find(t => t.title === savedPpm) ||
+      const clTab = (savedCl && tabs.find(t => t.title === savedCl)) ||
+                    tabs.find(t => /client.?list|contact.?list/i.test(t.title));
+      if (clTab) clSel.value = clTab.title;
+
+      // Reject saved PPM if it looks like a client/contact list (not a headcount/movement sheet)
+      const savedPpmValid = savedPpm && !/client.?list|contact.?list/i.test(savedPpm);
+      const ppmTab = (savedPpmValid && tabs.find(t => t.title === savedPpm)) ||
                      tabs.find(t => /ppm|per.?product/i.test(t.title)) ||
                      tabs.find(t => /movement/i.test(t.title) && !/merged/i.test(t.title)) ||
+                     tabs.find(t => t.title.toLowerCase().includes('headcount')) ||
                      tabs[0];
 
-      // Load HC and Unit Price first, then PPM data
+      // Load HC, Unit Price, Client List first, then PPM data
       if (hcSel.value) await loadHCData();
       if (upSel.value) await loadUPData();
+      if (clSel.value) await loadCLData();
       if (ppmTab) { sel.value = ppmTab.title; await loadPPM(); }
     } catch (e) {
       sel.innerHTML = `<option value="">Error: ${e.message}</option>`;
@@ -1312,6 +1340,7 @@
       // Auto-detect client and product/app columns
       ppm.hcColClient  = detectCol(headers, ['client name', 'client', 'company']);
       ppm.hcColProduct = detectCol(headers, ['product', 'application', 'app']);
+      ppm.hcColEntity  = detectCol(headers, ['entity']);
 
       // Month columns are the period keys (e.g. "Jul 2024", "Aug 2024", …)
       ppm.hcPeriodCols = headers.filter(isMonthCol).sort((a, b) => parsePeriod(a) - parsePeriod(b));
@@ -1324,7 +1353,7 @@
         : `⚠ HC: 0 entries — check column mappings`;
       statusEl.className = entryCount > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
 
-      if (ppm.rawData.length) renderPPM();
+      if (ppm.rawData.length) { populatePPMDateSelects(); renderPPM(); }
     } catch (e) {
       statusEl.textContent = '⚠ HC: ' + e.message;
       statusEl.className = 'status-pill pill-red';
@@ -1376,6 +1405,45 @@
     }
   }
 
+  async function loadCLData() {
+    const sheet = document.getElementById('cl-sheet-select').value;
+    if (!sheet) return;
+    const statusEl = document.getElementById('cl-status');
+    statusEl.textContent = 'Loading Client List…';
+    statusEl.className = 'status-pill pill-muted';
+    statusEl.style.display = '';
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(sheet)}`);
+      ppm.clData = data.records;
+      const headers = data.records.length ? Object.keys(data.records[0]) : [];
+
+      ppm.clColClient    = detectCol(headers, ['client name', 'client', 'company name', 'company']);
+      ppm.clColStart     = detectCol(headers, ['start date', 'contract start', 'go live', 'start']);
+      ppm.clColRenewal   = detectCol(headers, ['renewal date', 'renewal', 'contract end', 'end date']);
+      ppm.clColTerminate = detectCol(headers, ['terminate date', 'termination date', 'terminated', 'terminate']);
+
+      ppm.clMap = {};
+      for (const row of ppm.clData) {
+        const key = (row[ppm.clColClient] || '').trim().toLowerCase();
+        if (!key) continue;
+        if (!ppm.clMap[key]) {
+          ppm.clMap[key] = {
+            startDate:     row[ppm.clColStart]     || '',
+            renewalDate:   row[ppm.clColRenewal]   || '',
+            terminateDate: row[ppm.clColTerminate] || ''
+          };
+        }
+      }
+
+      const count = Object.keys(ppm.clMap).length;
+      statusEl.textContent = count > 0 ? `✓ Client List: ${count} clients` : `⚠ Client List: 0 clients`;
+      statusEl.className = count > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
+    } catch (e) {
+      statusEl.textContent = '⚠ Client List: ' + e.message;
+      statusEl.className = 'status-pill pill-red';
+    }
+  }
+
   function lookupUnitPrice(clientName, partnerName, app) {
     const appKey     = (app         || '').trim().toLowerCase();
     const clientKey  = (clientName  || '').trim().toLowerCase();
@@ -1400,27 +1468,54 @@
     ppm.hcMap = {};
     const cc = ppm.hcColClient;
     const cp = ppm.hcColProduct;
-    for (const row of ppm.hcData) {
-      const key = `${(row[cc] || '').trim().toLowerCase()}|||${(row[cp] || '').trim().toLowerCase()}`;
-      if (!ppm.hcMap[key]) ppm.hcMap[key] = {};
+    const ce = ppm.hcColEntity || '';
+    // Process Active rows first so they take priority over Terminated when entity is the same
+    const sorted = [...ppm.hcData].sort((a, b) => {
+      const sa = (a.Status || '').toLowerCase(), sb = (b.Status || '').toLowerCase();
+      const aActive = sa.includes('active') ? 0 : 1;
+      const bActive = sb.includes('active') ? 0 : 1;
+      return aActive - bActive;
+    });
+    for (const row of sorted) {
+      const client = (row[cc] || '').trim().toLowerCase();
+      const app    = (row[cp] || '').trim().toLowerCase();
+      const entity = ce ? (row[ce] || '').trim().toLowerCase() : '';
+      // Use entity-level key so different sub-entities sum, same entity overwrites (Active wins)
+      const entityKey = `${client}|||${entity}|||${app}`;
+      const lookupKey = `${client}|||${app}`;
+      if (!ppm.hcMap[entityKey]) ppm.hcMap[entityKey] = { _lookupKey: lookupKey };
       for (const col of ppm.hcPeriodCols) {
         const v = row[col];
-        if (v !== null && v !== undefined && v !== '') ppm.hcMap[key][col] = v;
+        const num = parseFloat(v);
+        if (v !== null && v !== undefined && v !== '') {
+          ppm.hcMap[entityKey][col] = isNaN(num) ? 0 : num;
+        }
       }
     }
   }
 
   function lookupHC(clientName, app, period) {
-    const key = `${(clientName || '').trim().toLowerCase()}|||${(app || '').trim().toLowerCase()}`;
-    const entry = ppm.hcMap[key];
-    if (!entry) return '';
-    if (period) return entry[period] ?? '';
-    // No period selected: return latest available value
-    for (let i = ppm.hcPeriodCols.length - 1; i >= 0; i--) {
-      const v = entry[ppm.hcPeriodCols[i]];
-      if (v !== undefined) return v;
+    const client = (clientName || '').trim().toLowerCase();
+    const appKey = (app || '').trim().toLowerCase();
+    // Sum across all entity sub-keys matching this client+app
+    const prefix = `${client}|||`;
+    const suffix = `|||${appKey}`;
+    let total = 0, found = false;
+    for (const k of Object.keys(ppm.hcMap)) {
+      if (k.startsWith(prefix) && k.endsWith(suffix)) {
+        const entry = ppm.hcMap[k];
+        if (period) {
+          const v = entry[period];
+          if (v !== undefined && v !== '') { total += v; found = true; }
+        } else {
+          for (let i = ppm.hcPeriodCols.length - 1; i >= 0; i--) {
+            const v = entry[ppm.hcPeriodCols[i]];
+            if (v !== undefined) { total += v; found = true; break; }
+          }
+        }
+      }
     }
-    return '';
+    return found ? total : '';
   }
 
   async function loadPPM() {
@@ -1479,6 +1574,7 @@
       localStorage.setItem('ppm_sheet',    document.getElementById('ppm-sheet-select').value);
       localStorage.setItem('ppm_hc_sheet', document.getElementById('hc-sheet-select').value);
       localStorage.setItem('ppm_up_sheet', document.getElementById('up-sheet-select').value);
+      localStorage.setItem('ppm_cl_sheet', document.getElementById('cl-sheet-select').value);
 
       populatePPMFilters();
       renderPPM();
@@ -1495,10 +1591,22 @@
       '<option value="">All Partners</option>' + partners.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
     document.getElementById('ppm-filter-client').innerHTML =
       '<option value="">All Clients</option>' + clients.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    populatePPMDateSelects();
+  }
+
+  function populatePPMDateSelects() {
+    const dateOpts = ppm.hcPeriodCols.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    const fromSel = document.getElementById('ppm-date-from');
+    const toSel   = document.getElementById('ppm-date-to');
+    const prevFrom = fromSel.value, prevTo = toSel.value;
+    fromSel.innerHTML = '<option value="">— start —</option>' + dateOpts;
+    toSel.innerHTML   = '<option value="">— end —</option>'   + dateOpts;
+    if (prevFrom) fromSel.value = prevFrom;
+    if (prevTo)   toSel.value   = prevTo;
   }
 
   function clearPPMFilters() {
-    ['ppm-filter-partner','ppm-filter-client','ppm-search'].forEach(id => {
+    ['ppm-filter-partner','ppm-filter-client','ppm-search','ppm-date-from','ppm-date-to'].forEach(id => {
       document.getElementById(id).value = '';
     });
     renderPPM();
@@ -1560,16 +1668,23 @@
       return;
     }
 
+    // Date range filter for period columns
+    const dateFrom = document.getElementById('ppm-date-from').value;
+    const dateTo   = document.getElementById('ppm-date-to').value;
+    const fromOrd  = dateFrom ? parsePeriod(dateFrom) : -Infinity;
+    const toOrd    = dateTo   ? parsePeriod(dateTo)   :  Infinity;
+    const visibleCols = ppm.hcPeriodCols.filter(c => { const o = parsePeriod(c); return o >= fromOrd && o <= toOrd; });
+
     // Base columns
     const baseCols = [cp, cc, cpd, ca].filter(Boolean);
     const hasMrr    = !!cm;
-    const hasMonths = hasHC && ppm.hcPeriodCols.length > 0;
+    const hasMonths = hasHC && visibleCols.length > 0;
     const hasUP     = Object.keys(ppm.upMap).length > 0 || Object.keys(ppm.upPartnerMap).length > 0;
     const showMrrCols = hasMonths && hasUP;  // computed MRR per month
 
     // Group months by year
     const yearGroups = {};
-    for (const col of ppm.hcPeriodCols) {
+    for (const col of visibleCols) {
       const yr = (col.match(/\d{4}/) || ['?'])[0];
       if (!yearGroups[yr]) yearGroups[yr] = [];
       yearGroups[yr].push(col);
@@ -1581,7 +1696,7 @@
     // Header rows: 3 when we have both HC and MRR per month, 2 otherwise
     const numHeaderRows = (hasMonths || hasMrr) ? (showMrrCols ? 3 : 2) : 1;
 
-    const totalCols = baseCols.length + (hasMrr ? 1 : 0) + ppm.hcPeriodCols.length * subPerMonth;
+    const totalCols = baseCols.length + (hasMrr ? 1 : 0) + visibleCols.length * subPerMonth;
 
     // ── Row 1: base cols (rowspan=numHeaderRows), static MRR (rowspan), year groups ──
     let r1 = baseCols.map((h, i) => {
@@ -1598,7 +1713,7 @@
     // ── Row 2: month abbreviations (colspan=subPerMonth each) ──
     let row2 = '';
     if (hasMonths) {
-      const r2 = ppm.hcPeriodCols.map(col => {
+      const r2 = visibleCols.map(col => {
         const abbr = col.replace(/\s*\d{4}\s*/, '').trim().slice(0, 3);
         return `<th colspan="${subPerMonth}" class="th-sub th-month-grp">${esc(abbr)}</th>`;
       }).join('');
@@ -1608,7 +1723,7 @@
     // ── Row 3: HC | MRR labels per month (only when showMrrCols) ──
     let row3 = '';
     if (showMrrCols) {
-      const r3 = ppm.hcPeriodCols.map(() =>
+      const r3 = visibleCols.map(() =>
         `<th class="th-sub th-month">HC</th><th class="th-sub th-mrr-month">MRR</th>`
       ).join('');
       row3 = `<tr>${r3}</tr>`;
@@ -1640,7 +1755,7 @@
       }
 
       if (hasMonths) {
-        for (const col of ppm.hcPeriodCols) {
+        for (const col of visibleCols) {
           const hcRaw = lookupHC(row[cc], row[ca], col);
           tds += `<td class="col-hc th-month" title="${esc(hcRaw)}">${esc(hcRaw)}</td>`;
           if (showMrrCols) {
@@ -1658,6 +1773,44 @@
       html += `<tr>${tds}</tr>`;
     }
 
+    // ── Totals row ──
+    if (hasMonths || hasMrr) {
+      const tots = {};
+      for (const col of visibleCols) tots[col] = { hc: 0, mrr: 0 };
+      for (const row of rows) {
+        for (const col of visibleCols) {
+          const hcNum = parseFloat(lookupHC(row[cc], row[ca], col));
+          if (!isNaN(hcNum)) {
+            tots[col].hc += hcNum;
+            if (showMrrCols && hcNum > 0) {
+              const unitPrice = lookupUnitPrice(row[cc], row[cp], row[ca]);
+              if (unitPrice !== null) tots[col].mrr += hcNum * unitPrice;
+            }
+          }
+        }
+      }
+      let tTds = baseCols.map((h, i) => {
+        let cls = '';
+        if (h === cp)       cls = 'col-partner col-sticky col-sticky-0';
+        else if (h === cc)  cls = 'col-client col-sticky col-sticky-1';
+        else if (h === cpd) cls = 'col-sticky col-sticky-2';
+        else if (h === ca)  cls = 'col-app col-sticky col-sticky-3';
+        return `<td class="${cls}">${i === 0 ? '<strong>TOTALS</strong>' : ''}</td>`;
+      }).join('');
+      if (hasMrr) tTds += `<td class="col-mrr align-right"></td>`;
+      if (hasMonths) {
+        for (const col of visibleCols) {
+          const hcT = tots[col].hc !== 0 ? fmtNum(tots[col].hc) : '';
+          tTds += `<td class="col-hc th-month"><strong>${esc(hcT)}</strong></td>`;
+          if (showMrrCols) {
+            const mrrT = tots[col].mrr !== 0 ? fmtNum(tots[col].mrr) : '';
+            tTds += `<td class="col-mrr th-mrr-month"><strong>${esc(mrrT)}</strong></td>`;
+          }
+        }
+      }
+      html += `<tr class="row-totals">${tTds}</tr>`;
+    }
+
     const ppmWrap = document.createElement('div');
     ppmWrap.className = 'table-wrap';
     ppmWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead>${row1}${row2}${row3}</thead><tbody>${html}</tbody></table>`;
@@ -1665,6 +1818,105 @@
     ppmContent.innerHTML = '';
     ppmContent.appendChild(ppmWrap);
     setTimeout(() => fixStickyHeaders(ppmWrap), 0);
+  }
+
+  function downloadPPMCSV() {
+    if (!ppm.rawData.length) return;
+
+    const cp  = document.getElementById('ppm-col-partner').value || ppm.colPartner;
+    const cc  = document.getElementById('ppm-col-client').value  || ppm.colClient;
+    const cpd = document.getElementById('ppm-col-product').value || ppm.colProduct;
+    const ca  = document.getElementById('ppm-col-app').value     || ppm.colApp;
+    const cm  = document.getElementById('ppm-col-mrr').value     || ppm.colMrr;
+
+    const fPartner = document.getElementById('ppm-filter-partner').value;
+    const fClient  = document.getElementById('ppm-filter-client').value;
+    const search   = document.getElementById('ppm-search').value.toLowerCase();
+    const dateFrom = document.getElementById('ppm-date-from').value;
+    const dateTo   = document.getElementById('ppm-date-to').value;
+    const fromOrd  = dateFrom ? parsePeriod(dateFrom) : -Infinity;
+    const toOrd    = dateTo   ? parsePeriod(dateTo)   :  Infinity;
+    const visCols  = ppm.hcPeriodCols.filter(c => { const o = parsePeriod(c); return o >= fromOrd && o <= toOrd; });
+
+    const hasHC = Object.keys(ppm.hcMap).length > 0;
+    const hasUP = Object.keys(ppm.upMap).length > 0 || Object.keys(ppm.upPartnerMap).length > 0;
+    const hasMonths = hasHC && visCols.length > 0;
+    const showMrrCols = hasMonths && hasUP;
+
+    let exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      const list = apps.length ? apps : [''];
+      for (const app of list) exploded.push({ ...row, [ca]: app });
+    }
+
+    let rows = exploded.filter(r => {
+      if (fPartner && (r[cp] || '') !== fPartner) return false;
+      if (fClient  && (r[cc] || '') !== fClient)  return false;
+      if (search   && !(r[ca] || '').toLowerCase().includes(search)) return false;
+      return true;
+    });
+    rows = [...rows].sort((a, b) => {
+      for (const col of [cp, cc, ca]) { const s = (a[col] || '').localeCompare(b[col] || ''); if (s !== 0) return s; }
+      return 0;
+    });
+
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    const baseCols = [cp, cc, cpd, ca].filter(Boolean);
+    const header = baseCols.map(h => h === ca ? 'Application' : h);
+    if (cm) header.push('MRR');
+    for (const col of visCols) {
+      header.push(`HC ${col}`);
+      if (showMrrCols) header.push(`MRR ${col}`);
+    }
+
+    const tots = {};
+    for (const col of visCols) tots[col] = { hc: 0, mrr: 0 };
+
+    const csvRows = [header.map(csvCell).join(',')];
+    for (const row of rows) {
+      const cells = baseCols.map(h => row[h] ?? '');
+      if (cm) cells.push(row[cm] ?? '');
+      for (const col of visCols) {
+        const hcRaw = lookupHC(row[cc], row[ca], col);
+        cells.push(hcRaw);
+        const hcNum = parseFloat(hcRaw);
+        if (!isNaN(hcNum)) tots[col].hc += hcNum;
+        if (showMrrCols) {
+          let mrrVal = '';
+          if (!isNaN(hcNum) && hcNum > 0) {
+            const up = lookupUnitPrice(row[cc], row[cp], row[ca]);
+            if (up !== null) { const v = hcNum * up; tots[col].mrr += v; mrrVal = v.toFixed(2); }
+          }
+          cells.push(mrrVal);
+        }
+      }
+      csvRows.push(cells.map(csvCell).join(','));
+    }
+
+    // Totals row
+    const tCells = baseCols.map((_, i) => i === 0 ? 'TOTALS' : '');
+    if (cm) tCells.push('');
+    for (const col of visCols) {
+      tCells.push(tots[col].hc !== 0 ? tots[col].hc.toString() : '');
+      if (showMrrCols) tCells.push(tots[col].mrr !== 0 ? tots[col].mrr.toFixed(2) : '');
+    }
+    csvRows.push(tCells.map(csvCell).join(','));
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ppm-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function fixStickyHeaders(wrapper) {
@@ -1678,6 +1930,22 @@
   }
 
   // ── Company Movement ──
+  async function refreshCompanyMovement() {
+    const el = document.getElementById('overall-movement-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+    try {
+      if (cmActiveTab === 'merged') {
+        await loadMergedMovementData();
+        renderMergedCompanyMovement();
+      } else {
+        await loadPPMSheetList();
+        renderOverallMovement();
+      }
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+    }
+  }
+
   function switchCMTab(tab) {
     cmActiveTab = tab;
     document.querySelectorAll('.cm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -1786,7 +2054,7 @@
         await loadMergedMovementData();
         renderMergedCompanyMovement();
       } else {
-        if (!ppm.rawData.length || !ppm.hcPeriodCols.length) await loadPPMSheetList();
+        await loadPPMSheetList();
         renderOverallMovement();
       }
     } catch (e) {
@@ -1820,13 +2088,16 @@
     for (const row of exploded) {
       const key = `${row[cp] || ''}|||${row[cc] || ''}`;
       if (!clientMap.has(key)) {
+        const clKey = (row[cc] || '').trim().toLowerCase();
+        const clEntry = ppm.clMap[clKey] || {};
         clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
-          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+          startDate:     clEntry.startDate     || '',
+          renewalDate:   clEntry.renewalDate   || '',
+          terminateDate: clEntry.terminateDate || '',
+          apps: [] });
       }
       const e = clientMap.get(key);
       if (row[ca]) e.apps.push(row[ca]);
-      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
-      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
     }
 
     // Compute per-month Total MRR and MAX HC per client
@@ -1878,10 +2149,11 @@
     const sortedYears = Object.keys(yearGroups).sort();
 
     const baseCols = [
-      { key: 'partner',     label: 'Partner' },
-      { key: 'client',      label: 'Client Name' },
-      ...(csd ? [{ key: 'startDate',   label: 'Start Date' }]   : []),
-      ...(crd ? [{ key: 'renewalDate', label: 'Renewal Date' }] : []),
+      { key: 'partner',       label: 'Partner' },
+      { key: 'client',        label: 'Client Name' },
+      { key: 'startDate',     label: 'Start Date' },
+      { key: 'renewalDate',   label: 'Renewal Date' },
+      { key: 'terminateDate', label: 'Terminate Date' },
     ];
     const totalCols = baseCols.length + ppm.hcPeriodCols.length * 2;
 
@@ -1965,13 +2237,16 @@
     for (const row of exploded) {
       const key = `${row[cp] || ''}|||${row[cc] || ''}`;
       if (!clientMap.has(key)) {
+        const clKey = (row[cc] || '').trim().toLowerCase();
+        const clEntry = ppm.clMap[clKey] || {};
         clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
-          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+          startDate:     clEntry.startDate     || '',
+          renewalDate:   clEntry.renewalDate   || '',
+          terminateDate: clEntry.terminateDate || '',
+          apps: [] });
       }
       const e = clientMap.get(key);
       if (row[ca]) e.apps.push(row[ca]);
-      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
-      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
     }
 
     // Compute per-month data per client
@@ -2015,9 +2290,7 @@
       return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
     }
 
-    const baseCols = ['Partner', 'Client Name',
-      ...(csd ? ['Start Date']   : []),
-      ...(crd ? ['Renewal Date'] : [])];
+    const baseCols = ['Partner', 'Client Name', 'Start Date', 'Renewal Date', 'Terminate Date'];
     const monthCols = ppm.hcPeriodCols.flatMap(col => [`${col} MRR`, `${col} HC`]);
     const csvRows = [];
 
@@ -2025,7 +2298,7 @@
     csvRows.push([...baseCols, ...monthCols].map(csvCell).join(','));
 
     // Totals row
-    const totalBase = ['TOTAL', '', ...(csd ? [''] : []), ...(crd ? [''] : [])];
+    const totalBase = ['TOTAL', '', '', '', ''];
     const totalMonth = ppm.hcPeriodCols.flatMap(col => {
       const d = totals[col];
       return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
@@ -2034,9 +2307,7 @@
 
     // Data rows
     for (const row of clientRows) {
-      const base = [row.partner, row.client,
-        ...(csd ? [row.startDate]   : []),
-        ...(crd ? [row.renewalDate] : [])];
+      const base = [row.partner, row.client, row.startDate, row.renewalDate, row.terminateDate];
       const months = ppm.hcPeriodCols.flatMap(col => {
         const d = row.monthData[col];
         return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
@@ -2123,16 +2394,30 @@
     if (!mm.records.length || !mm.periodCols.length) return null;
     const cp = mm.colPartner;
     const cc = mm.colClient;
+
+    // Pair each MRR period col with its matching HC col (same year+month)
+    const hasHC = mm.hcCols.length > 0;
+    const periodPairs = mm.periodCols.map(mrrCol => {
+      const ym = periodToYM(mrrCol);
+      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
+      return { mrrCol, hcCol };
+    });
+
     const clientList = mm.records
       .filter(row => (row[cc] || '').trim())
       .map(row => {
-        const mrrByPeriod = {};
-        for (const col of mm.periodCols) {
-          const raw = String(row[col] || '').replace(/[,$\s]/g, '');
-          const v = parseFloat(raw);
-          mrrByPeriod[col] = isNaN(v) || v < 0 ? 0 : v;
+        const mrrByPeriod = {}, hcByPeriod = {};
+        for (const { mrrCol, hcCol } of periodPairs) {
+          const mrrRaw = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+          const mrr = parseFloat(mrrRaw);
+          mrrByPeriod[mrrCol] = isNaN(mrr) || mrr < 0 ? 0 : mrr;
+          if (hcCol) {
+            const hcRaw = String(row[hcCol] || '').replace(/[,$\s]/g, '');
+            const hc = parseFloat(hcRaw);
+            hcByPeriod[mrrCol] = isNaN(hc) || hc < 0 ? 0 : hc;
+          }
         }
-        return { partner: row[cp] || '', client: row[cc] || '', mrrByPeriod };
+        return { partner: row[cp] || '', client: row[cc] || '', mrrByPeriod, hcByPeriod };
       });
 
     const allPeriods = mm.periodCols;
@@ -2142,25 +2427,42 @@
     if (startIdx >= allPeriods.length) startIdx = 1;
     const displayPeriods = allPeriods.slice(startIdx);
 
-    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+    const metricsPerPeriod = [];
+    let prevEndingMrr = null, prevEndingClients = null;
+    for (let i = 0; i < displayPeriods.length; i++) {
+      const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
-      let beginningMrr = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
         const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
-        beginningMrr += mrrPrev;
-        const wasActive = mrrPrev > 0;
-        const isActive  = mrrCurr > 0;
-        if (wasActive && !isActive)          lostClients += mrrPrev;
-        else if (!wasActive && isActive)     newBusiness += mrrCurr;
+        rawBeginning += mrrPrev;
+        // Use HC > 0 for active status if HC columns exist, otherwise fall back to MRR > 0
+        const hcCurr = hasHC ? (client.hcByPeriod[currPeriod] || 0) : mrrCurr;
+        const hcPrev = hasHC ? (prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0) : mrrPrev;
+        const wasActive = hcPrev > 0;
+        const isActive  = hcCurr > 0;
+        if (wasActive) rawBeginningClients++;
+        if (wasActive && !isActive)        { lostClients += mrrPrev; lostClientCount++; }
+        else if (!wasActive && isActive)   { newBusiness += mrrCurr; newClients++; }
         else if (wasActive && isActive) {
           if (mrrCurr > mrrPrev)             expansion   += mrrCurr - mrrPrev;
           else if (mrrCurr < mrrPrev)        contraction += mrrPrev - mrrCurr;
         }
       }
-      return { period: currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
-               endingMrr: beginningMrr + newBusiness + expansion - contraction - lostClients };
-    });
+      // Chain: beginning = previous ending (first period uses raw)
+      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
+      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
+      prevEndingMrr = endingMrr;
+
+      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
+      const endingClients = beginningClients + newClients - lostClientCount;
+      prevEndingClients = endingClients;
+
+      metricsPerPeriod.push({ period: currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
+               endingMrr, beginningClients, newClients, lostClientCount, endingClients });
+    }
 
     return { displayPeriods, metricsPerPeriod };
   }
@@ -2267,10 +2569,14 @@
 
     const displayPeriods = allPeriods.slice(startIdx);
 
-    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+    const metricsPerPeriod = [];
+    let prevEndingMrr = null, prevEndingClients = null;
+    for (let i = 0; i < displayPeriods.length; i++) {
+      const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
 
-      let beginningMrr = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
 
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
@@ -2278,19 +2584,18 @@
         const hcCurr  = client.hcByPeriod[currPeriod] || 0;
         const hcPrev  = prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0;
 
-        beginningMrr += mrrPrev;
+        rawBeginning += mrrPrev;
 
         const wasActive = hcPrev > 0;
         const isActive  = hcCurr > 0;
 
-        // Lost: was active last period, HC dropped to 0 this period
-        const isLost = wasActive && !isActive;
+        if (wasActive) rawBeginningClients++;
 
-        // New business: had no HC activity last period, has it now
-        const isNew = !wasActive && isActive;
+        const isLost = wasActive && !isActive;
+        const isNew  = !wasActive && isActive;
 
         if (isLost) {
-          // Use last known non-zero MRR
+          lostClientCount++;
           let lastMrr = mrrPrev;
           if (!lastMrr) {
             for (let j = startIdx + i - 2; j >= 0; j--) {
@@ -2300,6 +2605,7 @@
           }
           lostClients += lastMrr;
         } else if (isNew && isActive) {
+          newClients++;
           newBusiness += mrrCurr;
         } else if (wasActive && isActive) {
           if (mrrCurr > mrrPrev) expansion  += mrrCurr - mrrPrev;
@@ -2307,13 +2613,22 @@
         }
       }
 
-      return {
+      // Chain: beginning = previous ending (first period uses raw)
+      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
+      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
+      prevEndingMrr = endingMrr;
+
+      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
+      const endingClients = beginningClients + newClients - lostClientCount;
+      prevEndingClients = endingClients;
+
+      metricsPerPeriod.push({
         period: currPeriod,
         beginningMrr, newBusiness,
         expansion, contraction, lostClients,
-        endingMrr: beginningMrr + newBusiness + expansion - contraction - lostClients
-      };
-    });
+        endingMrr, beginningClients, newClients, lostClientCount, endingClients
+      });
+    }
 
     return { displayPeriods, metricsPerPeriod };
   }
@@ -2396,15 +2711,21 @@
     }).join('');
 
     const metrics = [
-      { key: 'beginningMrr', label: 'Beginning MRR',  cls: 'sm-row-beginning' },
-      { key: 'newBusiness',  label: '+ New Business',  cls: 'sm-row-new'       },
-      { key: 'upsell',       label: '+ Upsell',        cls: 'sm-row-upsell'    },
+      { key: 'beginningMrr',    label: 'Beginning MRR',       cls: 'sm-row-beginning'   },
+      { key: 'newBusiness',     label: '+ New Business',       cls: 'sm-row-new'         },
+      { key: 'upsell',          label: '+ Upsell',             cls: 'sm-row-upsell'      },
       { key: '__div__' },
-      { key: 'contraction',  label: '− Contraction',   cls: 'sm-row-contraction', negate: true },
-      { key: 'expansion',    label: '+ Expansion',     cls: 'sm-row-expansion'    },
-      { key: 'lostClients',  label: '− Lost Clients',  cls: 'sm-row-lost',        negate: true },
+      { key: 'contraction',     label: '− Contraction',        cls: 'sm-row-contraction', negate: true },
+      { key: 'expansion',       label: '+ Expansion',          cls: 'sm-row-expansion'   },
+      { key: 'lostClients',     label: '− Lost Clients',       cls: 'sm-row-lost',        negate: true },
       { key: '__div__' },
-      { key: 'endingMrr',    label: 'Ending MRR',      cls: 'sm-row-ending'       },
+      { key: 'endingMrr',       label: 'Ending MRR',           cls: 'sm-row-ending'      },
+      { key: '__div__' },
+      { key: 'beginningClients', label: 'Beginning No. of Clients', cls: 'sm-row-beginning', isCount: true },
+      { key: 'newClients',       label: '+ New Clients',            cls: 'sm-row-new',        isCount: true },
+      { key: 'lostClientCount',  label: '− Lost Clients',           cls: 'sm-row-lost',       isCount: true, negate: true },
+      { key: '__div__' },
+      { key: 'endingClients',    label: 'Ending No. of Clients',    cls: 'sm-row-ending',     isCount: true },
     ];
 
     let bodyHtml = '';
@@ -2418,7 +2739,9 @@
       for (const mp of metricsPerPeriod) {
         if (isUpsell) { tds += `<td class="sm-val">—</td>`; continue; }
         const raw = mp[m.key];
-        const display = m.negate ? `(${fmtC(raw)})` : fmtC(raw);
+        const display = m.isCount
+          ? (m.negate ? `(${raw})` : String(raw))
+          : (m.negate ? `(${fmtC(raw)})` : fmtC(raw));
         tds += `<td class="sm-val">${esc(display)}</td>`;
       }
       bodyHtml += `<tr class="${m.cls}">${tds}</tr>`;
@@ -2455,13 +2778,18 @@
 
     const header = ['Metric', ...displayPeriods].map(csvCell).join(',');
     const rows = [
-      ['Beginning MRR', ...metricsPerPeriod.map(m => m.beginningMrr.toFixed(2))],
-      ['New Business',  ...metricsPerPeriod.map(m => m.newBusiness.toFixed(2))],
-      ['Upsell',        ...metricsPerPeriod.map(() => '')],
-      ['Contraction',   ...metricsPerPeriod.map(m => (-m.contraction).toFixed(2))],
-      ['Expansion',     ...metricsPerPeriod.map(m => m.expansion.toFixed(2))],
-      ['Lost Clients',  ...metricsPerPeriod.map(m => (-m.lostClients).toFixed(2))],
-      ['Ending MRR',    ...metricsPerPeriod.map(m => m.endingMrr.toFixed(2))],
+      ['Beginning MRR',            ...metricsPerPeriod.map(m => m.beginningMrr.toFixed(2))],
+      ['New Business',             ...metricsPerPeriod.map(m => m.newBusiness.toFixed(2))],
+      ['Upsell',                   ...metricsPerPeriod.map(() => '')],
+      ['Contraction',              ...metricsPerPeriod.map(m => (-m.contraction).toFixed(2))],
+      ['Expansion',                ...metricsPerPeriod.map(m => m.expansion.toFixed(2))],
+      ['Lost Clients',             ...metricsPerPeriod.map(m => (-m.lostClients).toFixed(2))],
+      ['Ending MRR',               ...metricsPerPeriod.map(m => m.endingMrr.toFixed(2))],
+      [],
+      ['Beginning No. of Clients', ...metricsPerPeriod.map(m => m.beginningClients)],
+      ['New Clients',              ...metricsPerPeriod.map(m => m.newClients)],
+      ['Lost Clients (Count)',      ...metricsPerPeriod.map(m => -m.lostClientCount)],
+      ['Ending No. of Clients',    ...metricsPerPeriod.map(m => m.endingClients)],
     ].map(r => r.map(csvCell).join(','));
 
     const csv = [header, ...rows].join('\n');

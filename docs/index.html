@@ -6,7 +6,6 @@
   <title>TH SAAS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://accounts.google.com/gsi/client" async onload="initGoogleAuth()"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -305,6 +304,8 @@
       font-size: 12px; color: var(--text); background: #fff; outline: none; font-family: inherit;
     }
     .ppm-filter-bar select:focus, .ppm-filter-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    .ppm-filter-bar .filter-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; align-self: center; }
+    .row-totals td { background: var(--hover-bg, #f1f5fb); font-weight: 600; border-top: 2px solid var(--border); }
 
     /* ── PPM stats ── */
     .ppm-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -405,26 +406,6 @@
 </head>
 <body>
 
-<!-- Login Screen -->
-<div id="login-screen" style="position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px">
-  <div style="background:#fff;border-radius:16px;padding:44px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.35);text-align:center;font-family:'Inter',sans-serif">
-    <div style="width:52px;height:52px;background:#2563eb;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin:0 auto 20px">T</div>
-    <h1 style="font-size:20px;font-weight:800;color:#111827;margin-bottom:6px">TH SAAS</h1>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:32px;line-height:1.5">Data Integration Platform<br>Sign in with your organization account.</p>
-    <div id="login-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:500;margin-bottom:20px"></div>
-    <button onclick="signIn()" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:13px 20px;background:#fff;border:1.5px solid #d1d5db;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;color:#111827;font-family:inherit;box-sizing:border-box">
-      <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-      </svg>
-      Sign in with Google
-    </button>
-    <p style="font-size:11.5px;color:#9ca3af;margin-top:24px;line-height:1.6">Only <strong style="color:#6b7280">authorized accounts</strong> can access this platform.</p>
-  </div>
-</div>
-
 <!-- Sidebar -->
 <aside id="sidebar">
   <div class="sidebar-logo">
@@ -472,7 +453,7 @@
     </div>
   </nav>
   <div class="sidebar-footer">
-    <span id="server-status-text" style="color:#4ade80">● Static Mode</span>
+    <span id="server-status-text">● Connecting…</span>
   </div>
 </aside>
 
@@ -489,7 +470,7 @@
       <div id="user-info" style="display:none;align-items:center;gap:8px;margin-left:4px;padding-left:10px;border-left:1px solid var(--border)">
         <img id="user-avatar" src="" alt="" width="26" height="26" style="border-radius:50%;display:none">
         <span id="user-name" style="font-size:12px;font-weight:600;color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-        <a href="#" onclick="signOut();return false" style="font-size:11.5px;color:var(--danger);font-weight:600;text-decoration:none;padding:3px 8px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2">Sign out</a>
+        <a href="/logout" style="font-size:11.5px;color:var(--danger);font-weight:600;text-decoration:none;padding:3px 8px;border:1px solid #fecaca;border-radius:6px;background:#fef2f2">Sign out</a>
       </div>
     </div>
   </div>
@@ -558,6 +539,7 @@
           <button class="sm-tab active" data-tab="merged" onclick="switchCMTab('merged')">Merged Movement</button>
           <button class="sm-tab" data-tab="computed" onclick="switchCMTab('computed')">Computed</button>
         </div>
+        <button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="refreshCompanyMovement()">↻ Refresh</button>
       </div>
       <div id="overall-movement-content">
         <div class="loading-state" style="color:var(--text-muted)">Loading…</div>
@@ -613,6 +595,11 @@
             <label>Unit Price Sheet</label>
             <select id="up-sheet-select" onchange="loadUPData()"><option value="">— auto —</option></select>
           </div>
+          <div class="cfg-group">
+            <label>Client List Sheet</label>
+            <select id="cl-sheet-select" onchange="loadCLData()"><option value="">— auto —</option></select>
+            <span id="cl-status" class="status-pill pill-muted" style="display:none"></span>
+          </div>
           <div class="cfg-actions">
             <button class="btn btn-primary btn-sm" onclick="loadPPM()">▶ Load</button>
             <button class="btn btn-secondary btn-sm" onclick="loadPPMSheetList()">↻ Reload Tabs</button>
@@ -655,8 +642,15 @@
           <option value="">All Clients</option>
         </select>
         <input type="text" id="ppm-search" placeholder="Search application…" style="width:180px" />
+        <div class="filter-sep"></div>
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">From</label>
+        <select id="ppm-date-from" style="min-width:110px"><option value="">— start —</option></select>
+        <label style="font-size:12px;color:var(--text-muted);white-space:nowrap">To</label>
+        <select id="ppm-date-to" style="min-width:110px"><option value="">— end —</option></select>
+        <div class="filter-sep"></div>
         <button class="btn btn-secondary btn-sm" onclick="renderPPM()">Apply</button>
         <button class="btn btn-secondary btn-sm" onclick="clearPPMFilters()">✕ Clear</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPPMCSV()">⬇ CSV</button>
         <span id="ppm-count-label" style="color:var(--text-muted);font-size:13px;margin-left:auto"></span>
       </div>
 
@@ -725,25 +719,6 @@
             </div>
           </div>
 
-          <div class="divider"></div>
-
-          <div class="settings-section">
-            <h3>Access Control</h3>
-            <div class="desc" style="margin-top:4px">
-              Restrict who can sign in. Leave both blank to allow any Google account.
-            </div>
-            <div class="form-group">
-              <label>Authorized Emails</label>
-              <div class="hint">Comma-separated list of allowed email addresses.</div>
-              <input type="text" id="setting-allowed-emails" placeholder="alice@company.com, bob@company.com" />
-            </div>
-            <div class="form-group">
-              <label>Authorized Domain</label>
-              <div class="hint">Allow everyone from a domain (e.g. <code>sprout.ph</code>).</div>
-              <input type="text" id="setting-allowed-domain" placeholder="sprout.ph" />
-            </div>
-          </div>
-
           <div style="display:flex;gap:10px;align-items:center">
             <button class="btn btn-primary" onclick="saveSettings()" id="save-btn">Save Settings</button>
             <button class="btn btn-secondary" onclick="loadSettings()">↩ Reset</button>
@@ -785,112 +760,67 @@
     <div id="page-docs" class="page">
       <div style="max-width:860px;padding-bottom:40px">
 
-        <!-- Intro -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header"><h3>TH SAAS — Platform Overview</h3></div>
           <div class="card-body" style="font-size:13.5px;line-height:1.75;color:var(--text)">
             <p>TH SAAS is an internal data platform that connects <strong>Google Sheets</strong> and <strong>HubSpot CRM</strong> to give your team a unified view of MRR, headcount, and client movement across products and partners.</p>
-            <p style="margin-top:10px">The live site runs in <strong>Static Mode</strong> — all data is fetched directly from Google Sheets via the Sheets API using your Google login. No server is required.</p>
-            <div style="background:#eff6ff;border-left:3px solid var(--primary);border-radius:6px;padding:10px 14px;margin-top:12px;font-size:12.5px">
-              <strong>Static Mode</strong> — you sign in with Google once; your OAuth token is used to read the spreadsheet in real time. Settings (Sheets ID, access rules) are stored in your browser's localStorage.
-            </div>
+            <p style="margin-top:10px">This version runs on a Node.js/Express server with Google OAuth authentication. Sign in via Google; access is controlled by the Allowed Emails and Allowed Domain settings configured in <code>.env</code>.</p>
           </div>
         </div>
 
-        <!-- Pages reference -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header"><h3>Pages Reference</h3></div>
           <div class="card-body" style="font-size:13.5px;line-height:1.75">
 
-            <!-- Dashboard -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">▣ Dashboard</h4>
-            <p>The home screen. Shows three summary cards at a glance:</p>
-            <ul style="margin:6px 0 10px 18px">
-              <li><strong>Sheet Tabs</strong> — how many tabs are found in the configured spreadsheet.</li>
-              <li><strong>HubSpot Companies</strong> — total companies pulled from HubSpot (not available in static mode).</li>
-              <li><strong>Server Status</strong> — shows <em>Static Mode</em> (always healthy in this version).</li>
-            </ul>
-            <p>The <strong>Connection Status</strong> section shows whether Google Sheets and HubSpot are reachable. Quick action buttons let you jump to any page.</p>
+            <p>Home screen with summary cards (Sheet Tabs, HubSpot Companies, Server Status), connection health indicators, and quick action buttons.</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- PPM -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📦 Per Product Movement (PPM)</h4>
-            <p>The main data table. Displays every client–product combination with monthly <strong>HC (headcount)</strong> and computed <strong>MRR</strong> side by side.</p>
-
-            <p style="margin-top:10px"><strong>Setup — three sheets are required:</strong></p>
+            <p>Main data table. Displays every client–product combination with monthly <strong>HC (headcount)</strong> and computed <strong>MRR</strong>.</p>
+            <p style="margin-top:10px"><strong>Three sheets required:</strong></p>
             <ul style="margin:6px 0 10px 18px">
-              <li><strong>PPM Sheet</strong> — master client list with Partner, Client Name, Product, Application, Start Date, Renewal Date, and a base MRR column.</li>
-              <li><strong>HC Sheet</strong> — headcount data per client/app per period. Columns follow the pattern <code>HC YYYY-MM</code> or <code>MMM-YY</code>. A headcount &gt; 0 means the client is <em>active</em> that month.</li>
-              <li><strong>Unit Price Sheet</strong> — per-seat pricing per partner/product. Used to compute <em>MRR = HC × unit price</em> for each month.</li>
+              <li><strong>PPM Sheet</strong> — client list with Partner, Client Name, Product, Application, Start Date, Renewal Date, MRR.</li>
+              <li><strong>HC Sheet</strong> — monthly headcount per client (columns: <code>HC YYYY-MM</code>). HC &gt; 0 = active.</li>
+              <li><strong>Unit Price Sheet</strong> — per-seat pricing; used to compute <em>MRR = HC × unit price</em>.</li>
             </ul>
-
-            <p><strong>Column auto-detection:</strong> the page tries to match columns by common names (e.g. "Partner", "Client Name", "Application"). Use the dropdowns in the config row to override if your headers differ.</p>
-
-            <p style="margin-top:10px"><strong>Filters:</strong></p>
-            <ul style="margin:6px 0 10px 18px">
-              <li><strong>Partner</strong> — filter the table to one partner.</li>
-              <li><strong>Client</strong> — filter to one client within the selected partner.</li>
-              <li><strong>Application search</strong> — free-text search across the Application column.</li>
-            </ul>
-
-            <p><strong>Table layout:</strong> the first four columns (Partner, Client Name, Start Date, Renewal Date) are <em>sticky</em> — they stay visible as you scroll right through the monthly data. Each month shows two sub-columns: <strong>HC</strong> and <strong>MRR</strong>. Rows are grouped by partner with a collapsible group header.</p>
-
-            <p><strong>Stats bar</strong> (above the table) shows the totals for the current filter: Total MRR, Total HC, Active Clients, and Partners.</p>
+            <p><strong>Features:</strong> partner/client/application filters, sticky columns for Partner + Client Name + dates, group rows by partner, stats bar (Total MRR, HC, Active Clients, Partners).</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- SaaS Metrics -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📈 SaaS Metrics</h4>
-            <p>An MRR waterfall table — the standard SaaS cohort analysis. Each column is a month; rows show how MRR moved:</p>
-            <ul style="margin:6px 0 10px 18px">
-              <li><strong>Beginning MRR</strong> — ending MRR from the prior month.</li>
-              <li><strong>New Business</strong> — MRR from clients that were inactive last month and became active this month.</li>
-              <li><strong>Expansion</strong> — MRR increase from clients that were already active.</li>
-              <li><strong>Contraction</strong> — MRR decrease from clients that stayed active but reduced HC.</li>
-              <li><strong>Lost / Churned</strong> — MRR from clients that went from active to zero HC.</li>
-              <li><strong>Ending MRR</strong> — Beginning + New + Expansion − Contraction − Lost.</li>
-            </ul>
-            <p><strong>Source of truth:</strong> HC is the sole signal for client activity. A client is <em>active</em> when HC &gt; 0. MRR for each period is computed as <em>HC × unit price</em>.</p>
-            <p><strong>Tip:</strong> load <em>Per Product Movement</em> first — SaaS Metrics reuses PPM's loaded data. Use the <strong>Download CSV</strong> button to export the waterfall.</p>
+            <p>MRR waterfall (Beginning → New Business → Expansion → Contraction → Lost → Ending) computed per month from PPM data. Load PPM first. Exportable as CSV.</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- Company Movement -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">🏢 Company Movement</h4>
-            <p>A high-level MRR movement summary rolled up across all products and partners — the same waterfall logic as SaaS Metrics but presented as a compact overview chart. Useful for board-level or QBR reporting. Also reuses PPM data (load PPM first).</p>
+            <p>High-level MRR movement overview rolled up across all products and partners. Uses PPM data — load PPM first.</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- Google Sheets -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">📊 Google Sheets</h4>
-            <p>A raw data browser. Lists all tabs in your spreadsheet; clicking a tab loads its contents as a paginated table. Useful for quickly verifying data without opening the spreadsheet.</p>
+            <p>Raw data browser — lists all spreadsheet tabs; click any tab to view its contents as a table.</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- HubSpot -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">🔶 HubSpot CRM</h4>
-            <p>Displays company records pulled from HubSpot. <strong>Not available in static mode</strong> — requires the Node.js server version running locally with a HubSpot Private App token configured in <code>.env</code>.</p>
+            <p>Displays company records from HubSpot. Requires a Private App token in <code>.env</code> (<code>HUBSPOT_ACCESS_TOKEN</code>).</p>
 
             <div class="divider" style="margin:16px 0"></div>
 
-            <!-- Settings -->
             <h4 style="margin:0 0 6px;color:var(--primary);font-size:13px;text-transform:uppercase;letter-spacing:.5px">⚙️ Settings</h4>
-            <ul style="margin:6px 0 10px 18px">
-              <li><strong>Spreadsheet URL or ID</strong> — paste the full Google Sheets URL or just the ID (the string between <code>/d/</code> and <code>/edit</code>). Saved in localStorage.</li>
-              <li><strong>HubSpot Access Token</strong> — Private App token (not used in static mode).</li>
-              <li><strong>Authorized Emails</strong> — comma-separated list of emails allowed to sign in. Leave blank to allow any Google account.</li>
-              <li><strong>Authorized Domain</strong> — allow everyone from a domain (e.g. <code>sprout.ph</code>). Leave blank to allow all domains.</li>
-              <li><strong>Connection Status</strong> — test whether Sheets and HubSpot are reachable with the current credentials.</li>
+            <ul style="margin:6px 0 0 18px">
+              <li><strong>Spreadsheet URL or ID</strong> — paste the full URL or just the ID (between <code>/d/</code> and <code>/edit</code>).</li>
+              <li><strong>HubSpot Access Token</strong> — Private App token from HubSpot → Settings → Integrations → Private Apps.</li>
+              <li><strong>Connection Status</strong> — test live connectivity to both services.</li>
             </ul>
           </div>
         </div>
 
-        <!-- Google Sheets setup -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header"><h3>Google Sheets Setup Guide</h3></div>
           <div class="card-body" style="font-size:13.5px;line-height:1.75">
-            <p>Three sheets are required inside a single spreadsheet. Suggested tab names:</p>
             <div style="overflow-x:auto">
               <table style="font-size:12.5px;border-collapse:collapse;width:100%">
                 <thead>
@@ -913,43 +843,35 @@
                   </tr>
                   <tr>
                     <td style="padding:8px 12px;font-weight:600">Unit Price</td>
-                    <td style="padding:8px 12px">Per-seat pricing per partner/product</td>
+                    <td style="padding:8px 12px">Per-seat pricing</td>
                     <td style="padding:8px 12px;font-family:monospace;font-size:12px">Partner, Client Name, Application, Unit Price</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <div style="background:#fefce8;border-left:3px solid #ca8a04;border-radius:6px;padding:10px 14px;margin-top:14px;font-size:12.5px">
-              <strong>Important:</strong> your Google account must have at least <em>Viewer</em> access to the spreadsheet. In static mode the sign-in OAuth token is used — no service account is needed.
+              <strong>Important:</strong> share the spreadsheet with the service account email listed in <code>credentials/service-account.json</code> (at least Viewer access).
             </div>
           </div>
         </div>
 
-        <!-- Data logic -->
         <div class="card" style="margin-bottom:20px">
           <div class="card-header"><h3>Data Logic &amp; Calculations</h3></div>
           <div class="card-body" style="font-size:13.5px;line-height:1.75">
-            <h4 style="margin:0 0 8px;font-size:13px">Active vs Inactive clients</h4>
-            <p>A client is considered <strong>active</strong> in a given month when their HC value is <strong>greater than zero</strong> in the HC sheet for that period. HC = 0 (or blank) means inactive / churned for that month.</p>
-
+            <h4 style="margin:0 0 8px;font-size:13px">Active vs Inactive</h4>
+            <p>A client is <strong>active</strong> when HC &gt; 0 in the HC sheet for that month. HC = 0 or blank = inactive / churned.</p>
             <h4 style="margin:12px 0 8px;font-size:13px">Computed MRR</h4>
-            <p>Monthly MRR per client is not taken directly from the PPM MRR column — it is <strong>computed</strong> as:</p>
-            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:monospace;font-size:13px;margin:6px 0 10px">
-              MRR (month) = HC (month) × Unit Price (from Unit Price sheet)
-            </div>
-            <p>The base MRR column in the PPM sheet is used as a reference/fallback only.</p>
-
+            <div style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-family:monospace;font-size:13px;margin:6px 0 10px">MRR (month) = HC (month) × Unit Price</div>
             <h4 style="margin:12px 0 8px;font-size:13px">SaaS Metrics categories</h4>
             <ul style="margin:6px 0 0 18px">
-              <li><strong>New Business</strong> — HC was 0 last month, HC &gt; 0 this month → entire MRR is New.</li>
-              <li><strong>Lost / Churn</strong> — HC was &gt; 0 last month, HC = 0 this month → entire prior-month MRR is Lost.</li>
-              <li><strong>Expansion</strong> — client remained active (HC &gt; 0 both months) and MRR increased.</li>
-              <li><strong>Contraction</strong> — client remained active and MRR decreased.</li>
+              <li><strong>New Business</strong> — HC was 0 last month, HC &gt; 0 this month.</li>
+              <li><strong>Lost / Churn</strong> — HC was &gt; 0 last month, HC = 0 this month.</li>
+              <li><strong>Expansion</strong> — active both months, MRR increased.</li>
+              <li><strong>Contraction</strong> — active both months, MRR decreased.</li>
             </ul>
           </div>
         </div>
 
-        <!-- Troubleshooting -->
         <div class="card">
           <div class="card-header"><h3>Troubleshooting</h3></div>
           <div class="card-body" style="font-size:13.5px;line-height:1.75">
@@ -963,27 +885,19 @@
               <tbody>
                 <tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:8px 12px">Dashboard shows <em>Not configured</em></td>
-                  <td style="padding:8px 12px">Go to Settings and verify the Spreadsheet ID is saved. The default ID is pre-filled but can be overwritten by a prior blank save.</td>
+                  <td style="padding:8px 12px">Set <code>GOOGLE_SHEETS_ID</code> in Settings and save.</td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px 12px">PPM loads no data / columns are missing</td>
-                  <td style="padding:8px 12px">Select the correct sheet from the PPM Sheet dropdown, then click <strong>Load</strong>. Use the column dropdowns to map headers manually if auto-detect fails.</td>
+                  <td style="padding:8px 12px">PPM loads no data</td>
+                  <td style="padding:8px 12px">Select the correct sheet from the PPM Sheet dropdown, then click <strong>Load</strong>.</td>
                 </tr>
                 <tr style="border-bottom:1px solid var(--border)">
                   <td style="padding:8px 12px">SaaS Metrics shows nothing</td>
-                  <td style="padding:8px 12px">PPM must be loaded first. Navigate to Per Product Movement, select sheets, click Load, then return to SaaS Metrics and click Refresh.</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px 12px">SaaS Metrics totals don't match Company Movement</td>
-                  <td style="padding:8px 12px">Both use the same data engine. If they differ, reload PPM to refresh the cache, then recalculate both pages.</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:8px 12px">Sign-in button does nothing</td>
-                  <td style="padding:8px 12px">Your browser may be blocking the Google popup. Allow popups for this site in browser settings and try again.</td>
+                  <td style="padding:8px 12px">Load Per Product Movement first, then return to SaaS Metrics and click Refresh.</td>
                 </tr>
                 <tr>
-                  <td style="padding:8px 12px">Stale data after spreadsheet changes</td>
-                  <td style="padding:8px 12px">Click the <strong>↻ Refresh</strong> or <strong>↻ Reload Tabs</strong> button on the relevant page. Each button re-fetches directly from the Sheets API.</td>
+                  <td style="padding:8px 12px">Stale data</td>
+                  <td style="padding:8px 12px">Click <strong>↻ Refresh</strong> or <strong>↻ Reload Tabs</strong> on the relevant page.</td>
                 </tr>
               </tbody>
             </table>
@@ -997,147 +911,6 @@
 </div>
 
 <script>
-  // ── Static mode: Google OAuth + Sheets API direct calls ──
-  const CLIENT_ID      = '444033649262-dq8ao3h13ue4vin926cf65h0o9ff5918.apps.googleusercontent.com';
-  const DEFAULT_SHEETS_ID = '1RJ5necS3CfC_4Gkpn-gtdS7VapykTMHbwLZu6nIs0tE';
-  let tokenClient = null, accessToken = null, currentUser = null;
-
-  function initGoogleAuth() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets.readonly',
-      callback: handleTokenResponse,
-    });
-  }
-
-  async function handleTokenResponse(resp) {
-    if (resp.error) {
-      document.getElementById('login-error').textContent = 'Sign-in failed. Please try again.';
-      document.getElementById('login-error').style.display = '';
-      return;
-    }
-    accessToken = resp.access_token;
-    try {
-      const info = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      }).then(r => r.json());
-
-      const s = getLocalSettings();
-      const emails  = (s.ALLOWED_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-      const domains = (s.ALLOWED_DOMAIN || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-      const em = (info.email || '').toLowerCase();
-      const dom = em.split('@')[1] || '';
-
-      if ((emails.length || domains.length) && !emails.includes(em) && !domains.some(d => dom === d)) {
-        document.getElementById('login-error').textContent = 'Your account is not authorized to access this app.';
-        document.getElementById('login-error').style.display = '';
-        google.accounts.oauth2.revoke(accessToken, () => {});
-        accessToken = null;
-        return;
-      }
-
-      currentUser = info;
-      document.getElementById('login-screen').style.display = 'none';
-      const ui = document.getElementById('user-info');
-      document.getElementById('user-name').textContent = info.name || info.email;
-      if (info.picture) { const av = document.getElementById('user-avatar'); av.src = info.picture; av.style.display = ''; }
-      ui.style.display = 'flex';
-      const hb = document.getElementById('hubspot-badge');
-      if (hb) hb.style.display = 'none';
-      refreshDashboard();
-    } catch(e) {
-      document.getElementById('login-error').textContent = 'Failed to get user info: ' + e.message;
-      document.getElementById('login-error').style.display = '';
-    }
-  }
-
-  function signIn() {
-    document.getElementById('login-error').style.display = 'none';
-    if (!tokenClient) {
-      document.getElementById('login-error').textContent = 'Google auth not ready yet, please wait a moment and try again.';
-      document.getElementById('login-error').style.display = '';
-      return;
-    }
-    tokenClient.requestAccessToken({ prompt: 'select_account' });
-  }
-
-  function signOut() {
-    if (accessToken) google.accounts.oauth2.revoke(accessToken, () => {});
-    accessToken = null; currentUser = null;
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('user-info').style.display = 'none';
-  }
-
-  function getLocalSettings() {
-    try {
-      const saved = JSON.parse(localStorage.getItem('thsaas_settings') || '{}');
-      return { ...saved, GOOGLE_SHEETS_ID: saved.GOOGLE_SHEETS_ID || DEFAULT_SHEETS_ID };
-    } catch { return { GOOGLE_SHEETS_ID: DEFAULT_SHEETS_ID }; }
-  }
-  function saveLocalSettingsData(data) {
-    localStorage.setItem('thsaas_settings', JSON.stringify(data));
-  }
-
-  async function sheetsGet(path) {
-    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${path}`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-    return res.json();
-  }
-
-  function valuesToRecords(values) {
-    if (!values || values.length < 1) return [];
-    const headers = (values[0] || []).map(h => String(h || ''));
-    return values.slice(1)
-      .filter(row => row && row.some(c => c !== undefined && c !== ''))
-      .map(row => {
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? String(row[i]) : ''; });
-        return obj;
-      });
-  }
-
-  // ── API shim: routes all /api/* calls to static implementations ──
-  async function apiFetch(url) {
-    const s = getLocalSettings();
-    const sheetsId = s.GOOGLE_SHEETS_ID || '';
-
-    if (url === '/api/sheets/tabs') {
-      if (!sheetsId) throw new Error('No Sheets ID configured — go to Settings');
-      const data = await sheetsGet(`${sheetsId}?fields=sheets.properties`);
-      return { tabs: data.sheets.map(sh => sh.properties) };
-    }
-
-    if (url.startsWith('/api/sheets')) {
-      if (!sheetsId) throw new Error('No Sheets ID configured — go to Settings');
-      const range = new URLSearchParams(url.split('?')[1] || '').get('range') || 'Sheet1';
-      const data = await sheetsGet(`${sheetsId}/values/${encodeURIComponent(range)}`);
-      const records = valuesToRecords(data.values || []);
-      return { source: 'google_sheets', sheet: range, count: records.length, records };
-    }
-
-    if (url === '/api/settings') {
-      return {
-        GOOGLE_SHEETS_ID: s.GOOGLE_SHEETS_ID || '',
-        HUBSPOT_ACCESS_TOKEN: s.HUBSPOT_ACCESS_TOKEN ? '••••••••' + s.HUBSPOT_ACCESS_TOKEN.slice(-6) : '',
-        ALLOWED_EMAILS: s.ALLOWED_EMAILS || '',
-        ALLOWED_DOMAIN: s.ALLOWED_DOMAIN || '',
-        hasGoogleSheets: !!s.GOOGLE_SHEETS_ID,
-        hasHubSpot: false,
-      };
-    }
-
-    if (url === '/api/health') return { status: 'ok', timestamp: new Date().toISOString() };
-    if (url === '/api/me')     return currentUser;
-    if (url === '/api/hubspot') throw new Error('HubSpot is not available in the static version');
-
-    throw new Error(`Unavailable in static mode: ${url}`);
-  }
-
   const state = {
     settings: {},
     hubspotData: null,
@@ -1168,7 +941,16 @@
     el.addEventListener('click', () => navigateTo(el.dataset.page));
   });
 
-  // ── API ── (handled by static shim defined above)
+  // ── API ──
+  async function apiFetch(url) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { const j = await res.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  }
 
   // ── Sheet tabs ──
   async function loadSheetTabs() {
@@ -1227,15 +1009,19 @@
     }
   }
 
-  // ── HubSpot (disabled in static mode) ──
+  // ── HubSpot ──
   async function loadHubSpot() {
-    document.getElementById('hubspot-content').innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔶</div>
-        <p>HubSpot is not available in the static version.</p>
-        <p style="margin-top:8px;font-size:12px;color:var(--text-muted)">HubSpot's API blocks direct browser requests (CORS policy).</p>
-      </div>`;
+    const el = document.getElementById('hubspot-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Fetching HubSpot data…</div>';
     document.getElementById('hubspot-count-label').textContent = '';
+    try {
+      const data = await apiFetch('/api/hubspot');
+      state.hubspotData = data;
+      document.getElementById('hubspot-count-label').textContent = `${data.count} records`;
+      el.innerHTML = renderTable(data.records, 'No companies found in HubSpot.');
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${e.message}</p><p style="margin-top:8px;font-size:12px">Check your HubSpot token in Settings.</p></div>`;
+    }
   }
 
   // ── Table renderer ──
@@ -1278,36 +1064,44 @@
   });
 
   async function loadSettings() {
-    const s = getLocalSettings();
-    state.settings = { hasGoogleSheets: !!s.GOOGLE_SHEETS_ID, hasHubSpot: false, ...s };
-    document.getElementById('setting-sheets-id').value = s.GOOGLE_SHEETS_ID || '';
-    document.getElementById('setting-hubspot-token').value = s.HUBSPOT_ACCESS_TOKEN
-      ? '••••••••' + s.HUBSPOT_ACCESS_TOKEN.slice(-6) : '';
-    document.getElementById('setting-allowed-emails').value = s.ALLOWED_EMAILS || '';
-    document.getElementById('setting-allowed-domain').value = s.ALLOWED_DOMAIN || '';
-    document.getElementById('url-parsed-hint').style.display = 'none';
+    try {
+      const data = await apiFetch('/api/settings');
+      state.settings = data;
+      document.getElementById('setting-sheets-id').value = data.GOOGLE_SHEETS_ID || '';
+      document.getElementById('setting-hubspot-token').value = data.HUBSPOT_ACCESS_TOKEN || '';
+      document.getElementById('url-parsed-hint').style.display = 'none';
+    } catch (e) {
+      showAlert('settings', 'danger', 'Failed to load settings: ' + e.message);
+    }
   }
 
   async function saveSettings() {
     const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
     try {
-      const rawId  = document.getElementById('setting-sheets-id').value.trim();
-      const token  = document.getElementById('setting-hubspot-token').value.trim();
-      const emails = document.getElementById('setting-allowed-emails').value.trim();
-      const domain = document.getElementById('setting-allowed-domain').value.trim();
-      const current = getLocalSettings();
-      const update = { ...current, GOOGLE_SHEETS_ID: extractSheetId(rawId), ALLOWED_EMAILS: emails, ALLOWED_DOMAIN: domain };
-      if (token && !token.startsWith('••••••••')) update.HUBSPOT_ACCESS_TOKEN = token;
-      saveLocalSettingsData(update);
-      showAlert('settings', 'success', '✓ Settings saved.');
-      state.hubspotData = null; state.sheetTabs = []; state.activeSheet = null;
+      const rawId = document.getElementById('setting-sheets-id').value.trim();
+      const body = {
+        GOOGLE_SHEETS_ID: extractSheetId(rawId),
+        HUBSPOT_ACCESS_TOKEN: document.getElementById('setting-hubspot-token').value.trim(),
+      };
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showAlert('settings', 'success', '✓ Settings saved successfully.');
+      state.hubspotData = null;
+      state.sheetTabs = [];
+      state.activeSheet = null;
       await loadSettings();
       await testConnections();
     } catch (e) {
       showAlert('settings', 'danger', 'Failed to save: ' + e.message);
     } finally {
-      btn.disabled = false; btn.textContent = 'Save Settings';
+      btn.disabled = false;
+      btn.textContent = 'Save Settings';
     }
   }
 
@@ -1432,9 +1226,11 @@
     colPartner: '', colClient: '', colProduct: '', colApp: '', colMrr: '',
     colStartDate: '', colRenewalDate: '', colType: '',
     hcData: [], hcMap: {}, hcPeriodCols: [],
-    hcColClient: '', hcColProduct: '',
+    hcColClient: '', hcColProduct: '', hcColEntity: '',
     upData: [], upMap: {}, upPartnerMap: {},
-    upColCompany: '', upColPartner: '', upAppCols: []
+    upColCompany: '', upColPartner: '', upAppCols: [],
+    clData: [], clMap: {},
+    clColClient: '', clColStart: '', clColRenewal: '', clColTerminate: ''
   };
   const mm = { records: [], periodCols: [], mrrCols: [], hcCols: [], colPartner: null, colClient: null };
   let smActiveTab = 'merged';
@@ -1478,6 +1274,7 @@
     const sel   = document.getElementById('ppm-sheet-select');
     const hcSel = document.getElementById('hc-sheet-select');
     const upSel = document.getElementById('up-sheet-select');
+    const clSel = document.getElementById('cl-sheet-select');
     sel.innerHTML = '<option value="">Loading…</option>';
     try {
       const { tabs } = await apiFetch('/api/sheets/tabs');
@@ -1486,10 +1283,13 @@
       sel.innerHTML   = tabOpts;
       hcSel.innerHTML = tabOpts;
       upSel.innerHTML = tabOpts;
+      clSel.innerHTML = tabOpts;
 
+      // Restore saved selections; fall back to keyword auto-detection
       const savedPpm = localStorage.getItem('ppm_sheet');
       const savedHc  = localStorage.getItem('ppm_hc_sheet');
       const savedUp  = localStorage.getItem('ppm_up_sheet');
+      const savedCl  = localStorage.getItem('ppm_cl_sheet');
 
       const hcTab = tabs.find(t => t.title === savedHc) ||
                     tabs.find(t => t.title.toLowerCase().includes('headcount'));
@@ -1501,14 +1301,22 @@
                     );
       if (upTab) upSel.value = upTab.title;
 
-      const ppmTab = tabs.find(t => t.title === savedPpm) ||
+      const clTab = (savedCl && tabs.find(t => t.title === savedCl)) ||
+                    tabs.find(t => /client.?list|contact.?list/i.test(t.title));
+      if (clTab) clSel.value = clTab.title;
+
+      // Reject saved PPM if it looks like a client/contact list (not a headcount/movement sheet)
+      const savedPpmValid = savedPpm && !/client.?list|contact.?list/i.test(savedPpm);
+      const ppmTab = (savedPpmValid && tabs.find(t => t.title === savedPpm)) ||
                      tabs.find(t => /ppm|per.?product/i.test(t.title)) ||
                      tabs.find(t => /movement/i.test(t.title) && !/merged/i.test(t.title)) ||
+                     tabs.find(t => t.title.toLowerCase().includes('headcount')) ||
                      tabs[0];
 
-      // Load HC and Unit Price first, then PPM data
+      // Load HC, Unit Price, Client List first, then PPM data
       if (hcSel.value) await loadHCData();
       if (upSel.value) await loadUPData();
+      if (clSel.value) await loadCLData();
       if (ppmTab) { sel.value = ppmTab.title; await loadPPM(); }
     } catch (e) {
       sel.innerHTML = `<option value="">Error: ${e.message}</option>`;
@@ -1532,6 +1340,7 @@
       // Auto-detect client and product/app columns
       ppm.hcColClient  = detectCol(headers, ['client name', 'client', 'company']);
       ppm.hcColProduct = detectCol(headers, ['product', 'application', 'app']);
+      ppm.hcColEntity  = detectCol(headers, ['entity']);
 
       // Month columns are the period keys (e.g. "Jul 2024", "Aug 2024", …)
       ppm.hcPeriodCols = headers.filter(isMonthCol).sort((a, b) => parsePeriod(a) - parsePeriod(b));
@@ -1544,7 +1353,7 @@
         : `⚠ HC: 0 entries — check column mappings`;
       statusEl.className = entryCount > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
 
-      if (ppm.rawData.length) renderPPM();
+      if (ppm.rawData.length) { populatePPMDateSelects(); renderPPM(); }
     } catch (e) {
       statusEl.textContent = '⚠ HC: ' + e.message;
       statusEl.className = 'status-pill pill-red';
@@ -1596,6 +1405,45 @@
     }
   }
 
+  async function loadCLData() {
+    const sheet = document.getElementById('cl-sheet-select').value;
+    if (!sheet) return;
+    const statusEl = document.getElementById('cl-status');
+    statusEl.textContent = 'Loading Client List…';
+    statusEl.className = 'status-pill pill-muted';
+    statusEl.style.display = '';
+    try {
+      const data = await apiFetch(`/api/sheets?range=${encodeURIComponent(sheet)}`);
+      ppm.clData = data.records;
+      const headers = data.records.length ? Object.keys(data.records[0]) : [];
+
+      ppm.clColClient    = detectCol(headers, ['client name', 'client', 'company name', 'company']);
+      ppm.clColStart     = detectCol(headers, ['start date', 'contract start', 'go live', 'start']);
+      ppm.clColRenewal   = detectCol(headers, ['renewal date', 'renewal', 'contract end', 'end date']);
+      ppm.clColTerminate = detectCol(headers, ['terminate date', 'termination date', 'terminated', 'terminate']);
+
+      ppm.clMap = {};
+      for (const row of ppm.clData) {
+        const key = (row[ppm.clColClient] || '').trim().toLowerCase();
+        if (!key) continue;
+        if (!ppm.clMap[key]) {
+          ppm.clMap[key] = {
+            startDate:     row[ppm.clColStart]     || '',
+            renewalDate:   row[ppm.clColRenewal]   || '',
+            terminateDate: row[ppm.clColTerminate] || ''
+          };
+        }
+      }
+
+      const count = Object.keys(ppm.clMap).length;
+      statusEl.textContent = count > 0 ? `✓ Client List: ${count} clients` : `⚠ Client List: 0 clients`;
+      statusEl.className = count > 0 ? 'status-pill pill-green' : 'status-pill pill-amber';
+    } catch (e) {
+      statusEl.textContent = '⚠ Client List: ' + e.message;
+      statusEl.className = 'status-pill pill-red';
+    }
+  }
+
   function lookupUnitPrice(clientName, partnerName, app) {
     const appKey     = (app         || '').trim().toLowerCase();
     const clientKey  = (clientName  || '').trim().toLowerCase();
@@ -1620,27 +1468,54 @@
     ppm.hcMap = {};
     const cc = ppm.hcColClient;
     const cp = ppm.hcColProduct;
-    for (const row of ppm.hcData) {
-      const key = `${(row[cc] || '').trim().toLowerCase()}|||${(row[cp] || '').trim().toLowerCase()}`;
-      if (!ppm.hcMap[key]) ppm.hcMap[key] = {};
+    const ce = ppm.hcColEntity || '';
+    // Process Active rows first so they take priority over Terminated when entity is the same
+    const sorted = [...ppm.hcData].sort((a, b) => {
+      const sa = (a.Status || '').toLowerCase(), sb = (b.Status || '').toLowerCase();
+      const aActive = sa.includes('active') ? 0 : 1;
+      const bActive = sb.includes('active') ? 0 : 1;
+      return aActive - bActive;
+    });
+    for (const row of sorted) {
+      const client = (row[cc] || '').trim().toLowerCase();
+      const app    = (row[cp] || '').trim().toLowerCase();
+      const entity = ce ? (row[ce] || '').trim().toLowerCase() : '';
+      // Use entity-level key so different sub-entities sum, same entity overwrites (Active wins)
+      const entityKey = `${client}|||${entity}|||${app}`;
+      const lookupKey = `${client}|||${app}`;
+      if (!ppm.hcMap[entityKey]) ppm.hcMap[entityKey] = { _lookupKey: lookupKey };
       for (const col of ppm.hcPeriodCols) {
         const v = row[col];
-        if (v !== null && v !== undefined && v !== '') ppm.hcMap[key][col] = v;
+        const num = parseFloat(v);
+        if (v !== null && v !== undefined && v !== '') {
+          ppm.hcMap[entityKey][col] = isNaN(num) ? 0 : num;
+        }
       }
     }
   }
 
   function lookupHC(clientName, app, period) {
-    const key = `${(clientName || '').trim().toLowerCase()}|||${(app || '').trim().toLowerCase()}`;
-    const entry = ppm.hcMap[key];
-    if (!entry) return '';
-    if (period) return entry[period] ?? '';
-    // No period selected: return latest available value
-    for (let i = ppm.hcPeriodCols.length - 1; i >= 0; i--) {
-      const v = entry[ppm.hcPeriodCols[i]];
-      if (v !== undefined) return v;
+    const client = (clientName || '').trim().toLowerCase();
+    const appKey = (app || '').trim().toLowerCase();
+    // Sum across all entity sub-keys matching this client+app
+    const prefix = `${client}|||`;
+    const suffix = `|||${appKey}`;
+    let total = 0, found = false;
+    for (const k of Object.keys(ppm.hcMap)) {
+      if (k.startsWith(prefix) && k.endsWith(suffix)) {
+        const entry = ppm.hcMap[k];
+        if (period) {
+          const v = entry[period];
+          if (v !== undefined && v !== '') { total += v; found = true; }
+        } else {
+          for (let i = ppm.hcPeriodCols.length - 1; i >= 0; i--) {
+            const v = entry[ppm.hcPeriodCols[i]];
+            if (v !== undefined) { total += v; found = true; break; }
+          }
+        }
+      }
     }
-    return '';
+    return found ? total : '';
   }
 
   async function loadPPM() {
@@ -1695,9 +1570,11 @@
       document.getElementById('ppm-col-app').value     = ppm.colApp;
       document.getElementById('ppm-col-mrr').value     = ppm.colMrr;
 
+      // Persist sheet selections so Company Movement can auto-load on refresh
       localStorage.setItem('ppm_sheet',    document.getElementById('ppm-sheet-select').value);
       localStorage.setItem('ppm_hc_sheet', document.getElementById('hc-sheet-select').value);
       localStorage.setItem('ppm_up_sheet', document.getElementById('up-sheet-select').value);
+      localStorage.setItem('ppm_cl_sheet', document.getElementById('cl-sheet-select').value);
 
       populatePPMFilters();
       renderPPM();
@@ -1714,10 +1591,22 @@
       '<option value="">All Partners</option>' + partners.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
     document.getElementById('ppm-filter-client').innerHTML =
       '<option value="">All Clients</option>' + clients.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    populatePPMDateSelects();
+  }
+
+  function populatePPMDateSelects() {
+    const dateOpts = ppm.hcPeriodCols.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    const fromSel = document.getElementById('ppm-date-from');
+    const toSel   = document.getElementById('ppm-date-to');
+    const prevFrom = fromSel.value, prevTo = toSel.value;
+    fromSel.innerHTML = '<option value="">— start —</option>' + dateOpts;
+    toSel.innerHTML   = '<option value="">— end —</option>'   + dateOpts;
+    if (prevFrom) fromSel.value = prevFrom;
+    if (prevTo)   toSel.value   = prevTo;
   }
 
   function clearPPMFilters() {
-    ['ppm-filter-partner','ppm-filter-client','ppm-search'].forEach(id => {
+    ['ppm-filter-partner','ppm-filter-client','ppm-search','ppm-date-from','ppm-date-to'].forEach(id => {
       document.getElementById(id).value = '';
     });
     renderPPM();
@@ -1779,16 +1668,23 @@
       return;
     }
 
+    // Date range filter for period columns
+    const dateFrom = document.getElementById('ppm-date-from').value;
+    const dateTo   = document.getElementById('ppm-date-to').value;
+    const fromOrd  = dateFrom ? parsePeriod(dateFrom) : -Infinity;
+    const toOrd    = dateTo   ? parsePeriod(dateTo)   :  Infinity;
+    const visibleCols = ppm.hcPeriodCols.filter(c => { const o = parsePeriod(c); return o >= fromOrd && o <= toOrd; });
+
     // Base columns
     const baseCols = [cp, cc, cpd, ca].filter(Boolean);
     const hasMrr    = !!cm;
-    const hasMonths = hasHC && ppm.hcPeriodCols.length > 0;
+    const hasMonths = hasHC && visibleCols.length > 0;
     const hasUP     = Object.keys(ppm.upMap).length > 0 || Object.keys(ppm.upPartnerMap).length > 0;
     const showMrrCols = hasMonths && hasUP;  // computed MRR per month
 
     // Group months by year
     const yearGroups = {};
-    for (const col of ppm.hcPeriodCols) {
+    for (const col of visibleCols) {
       const yr = (col.match(/\d{4}/) || ['?'])[0];
       if (!yearGroups[yr]) yearGroups[yr] = [];
       yearGroups[yr].push(col);
@@ -1800,7 +1696,7 @@
     // Header rows: 3 when we have both HC and MRR per month, 2 otherwise
     const numHeaderRows = (hasMonths || hasMrr) ? (showMrrCols ? 3 : 2) : 1;
 
-    const totalCols = baseCols.length + (hasMrr ? 1 : 0) + ppm.hcPeriodCols.length * subPerMonth;
+    const totalCols = baseCols.length + (hasMrr ? 1 : 0) + visibleCols.length * subPerMonth;
 
     // ── Row 1: base cols (rowspan=numHeaderRows), static MRR (rowspan), year groups ──
     let r1 = baseCols.map((h, i) => {
@@ -1817,7 +1713,7 @@
     // ── Row 2: month abbreviations (colspan=subPerMonth each) ──
     let row2 = '';
     if (hasMonths) {
-      const r2 = ppm.hcPeriodCols.map(col => {
+      const r2 = visibleCols.map(col => {
         const abbr = col.replace(/\s*\d{4}\s*/, '').trim().slice(0, 3);
         return `<th colspan="${subPerMonth}" class="th-sub th-month-grp">${esc(abbr)}</th>`;
       }).join('');
@@ -1827,7 +1723,7 @@
     // ── Row 3: HC | MRR labels per month (only when showMrrCols) ──
     let row3 = '';
     if (showMrrCols) {
-      const r3 = ppm.hcPeriodCols.map(() =>
+      const r3 = visibleCols.map(() =>
         `<th class="th-sub th-month">HC</th><th class="th-sub th-mrr-month">MRR</th>`
       ).join('');
       row3 = `<tr>${r3}</tr>`;
@@ -1859,7 +1755,7 @@
       }
 
       if (hasMonths) {
-        for (const col of ppm.hcPeriodCols) {
+        for (const col of visibleCols) {
           const hcRaw = lookupHC(row[cc], row[ca], col);
           tds += `<td class="col-hc th-month" title="${esc(hcRaw)}">${esc(hcRaw)}</td>`;
           if (showMrrCols) {
@@ -1877,6 +1773,44 @@
       html += `<tr>${tds}</tr>`;
     }
 
+    // ── Totals row ──
+    if (hasMonths || hasMrr) {
+      const tots = {};
+      for (const col of visibleCols) tots[col] = { hc: 0, mrr: 0 };
+      for (const row of rows) {
+        for (const col of visibleCols) {
+          const hcNum = parseFloat(lookupHC(row[cc], row[ca], col));
+          if (!isNaN(hcNum)) {
+            tots[col].hc += hcNum;
+            if (showMrrCols && hcNum > 0) {
+              const unitPrice = lookupUnitPrice(row[cc], row[cp], row[ca]);
+              if (unitPrice !== null) tots[col].mrr += hcNum * unitPrice;
+            }
+          }
+        }
+      }
+      let tTds = baseCols.map((h, i) => {
+        let cls = '';
+        if (h === cp)       cls = 'col-partner col-sticky col-sticky-0';
+        else if (h === cc)  cls = 'col-client col-sticky col-sticky-1';
+        else if (h === cpd) cls = 'col-sticky col-sticky-2';
+        else if (h === ca)  cls = 'col-app col-sticky col-sticky-3';
+        return `<td class="${cls}">${i === 0 ? '<strong>TOTALS</strong>' : ''}</td>`;
+      }).join('');
+      if (hasMrr) tTds += `<td class="col-mrr align-right"></td>`;
+      if (hasMonths) {
+        for (const col of visibleCols) {
+          const hcT = tots[col].hc !== 0 ? fmtNum(tots[col].hc) : '';
+          tTds += `<td class="col-hc th-month"><strong>${esc(hcT)}</strong></td>`;
+          if (showMrrCols) {
+            const mrrT = tots[col].mrr !== 0 ? fmtNum(tots[col].mrr) : '';
+            tTds += `<td class="col-mrr th-mrr-month"><strong>${esc(mrrT)}</strong></td>`;
+          }
+        }
+      }
+      html += `<tr class="row-totals">${tTds}</tr>`;
+    }
+
     const ppmWrap = document.createElement('div');
     ppmWrap.className = 'table-wrap';
     ppmWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead>${row1}${row2}${row3}</thead><tbody>${html}</tbody></table>`;
@@ -1884,6 +1818,105 @@
     ppmContent.innerHTML = '';
     ppmContent.appendChild(ppmWrap);
     setTimeout(() => fixStickyHeaders(ppmWrap), 0);
+  }
+
+  function downloadPPMCSV() {
+    if (!ppm.rawData.length) return;
+
+    const cp  = document.getElementById('ppm-col-partner').value || ppm.colPartner;
+    const cc  = document.getElementById('ppm-col-client').value  || ppm.colClient;
+    const cpd = document.getElementById('ppm-col-product').value || ppm.colProduct;
+    const ca  = document.getElementById('ppm-col-app').value     || ppm.colApp;
+    const cm  = document.getElementById('ppm-col-mrr').value     || ppm.colMrr;
+
+    const fPartner = document.getElementById('ppm-filter-partner').value;
+    const fClient  = document.getElementById('ppm-filter-client').value;
+    const search   = document.getElementById('ppm-search').value.toLowerCase();
+    const dateFrom = document.getElementById('ppm-date-from').value;
+    const dateTo   = document.getElementById('ppm-date-to').value;
+    const fromOrd  = dateFrom ? parsePeriod(dateFrom) : -Infinity;
+    const toOrd    = dateTo   ? parsePeriod(dateTo)   :  Infinity;
+    const visCols  = ppm.hcPeriodCols.filter(c => { const o = parsePeriod(c); return o >= fromOrd && o <= toOrd; });
+
+    const hasHC = Object.keys(ppm.hcMap).length > 0;
+    const hasUP = Object.keys(ppm.upMap).length > 0 || Object.keys(ppm.upPartnerMap).length > 0;
+    const hasMonths = hasHC && visCols.length > 0;
+    const showMrrCols = hasMonths && hasUP;
+
+    let exploded = [];
+    for (const row of ppm.rawData) {
+      const apps = (row[ca] || '').split(',').map(a => a.trim()).filter(Boolean);
+      const list = apps.length ? apps : [''];
+      for (const app of list) exploded.push({ ...row, [ca]: app });
+    }
+
+    let rows = exploded.filter(r => {
+      if (fPartner && (r[cp] || '') !== fPartner) return false;
+      if (fClient  && (r[cc] || '') !== fClient)  return false;
+      if (search   && !(r[ca] || '').toLowerCase().includes(search)) return false;
+      return true;
+    });
+    rows = [...rows].sort((a, b) => {
+      for (const col of [cp, cc, ca]) { const s = (a[col] || '').localeCompare(b[col] || ''); if (s !== 0) return s; }
+      return 0;
+    });
+
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    const baseCols = [cp, cc, cpd, ca].filter(Boolean);
+    const header = baseCols.map(h => h === ca ? 'Application' : h);
+    if (cm) header.push('MRR');
+    for (const col of visCols) {
+      header.push(`HC ${col}`);
+      if (showMrrCols) header.push(`MRR ${col}`);
+    }
+
+    const tots = {};
+    for (const col of visCols) tots[col] = { hc: 0, mrr: 0 };
+
+    const csvRows = [header.map(csvCell).join(',')];
+    for (const row of rows) {
+      const cells = baseCols.map(h => row[h] ?? '');
+      if (cm) cells.push(row[cm] ?? '');
+      for (const col of visCols) {
+        const hcRaw = lookupHC(row[cc], row[ca], col);
+        cells.push(hcRaw);
+        const hcNum = parseFloat(hcRaw);
+        if (!isNaN(hcNum)) tots[col].hc += hcNum;
+        if (showMrrCols) {
+          let mrrVal = '';
+          if (!isNaN(hcNum) && hcNum > 0) {
+            const up = lookupUnitPrice(row[cc], row[cp], row[ca]);
+            if (up !== null) { const v = hcNum * up; tots[col].mrr += v; mrrVal = v.toFixed(2); }
+          }
+          cells.push(mrrVal);
+        }
+      }
+      csvRows.push(cells.map(csvCell).join(','));
+    }
+
+    // Totals row
+    const tCells = baseCols.map((_, i) => i === 0 ? 'TOTALS' : '');
+    if (cm) tCells.push('');
+    for (const col of visCols) {
+      tCells.push(tots[col].hc !== 0 ? tots[col].hc.toString() : '');
+      if (showMrrCols) tCells.push(tots[col].mrr !== 0 ? tots[col].mrr.toFixed(2) : '');
+    }
+    csvRows.push(tCells.map(csvCell).join(','));
+
+    const csv = csvRows.join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ppm-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function fixStickyHeaders(wrapper) {
@@ -1897,8 +1930,26 @@
   }
 
   // ── Company Movement ──
+  async function refreshCompanyMovement() {
+    const el = document.getElementById('overall-movement-content');
+    el.innerHTML = '<div class="loading-state"><div class="loader"></div> Loading data…</div>';
+    try {
+      if (cmActiveTab === 'merged') {
+        await loadMergedMovementData();
+        renderMergedCompanyMovement();
+      } else {
+        await loadPPMSheetList();
+        renderOverallMovement();
+      }
+    } catch (e) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${esc(e.message)}</p></div>`;
+    }
+  }
+
   function switchCMTab(tab) {
     cmActiveTab = tab;
+    document.querySelectorAll('.cm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    // also sync the sm-tab-bar buttons in the CM page
     document.querySelectorAll('#page-company-movement .sm-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     loadCompanyMovement();
   }
@@ -1911,56 +1962,82 @@
     }
     const cc = mm.colClient, cp = mm.colPartner;
     const hasHC = mm.hcCols.length > 0;
+
+    // Pair each MRR col with its matching HC col by period
     const periods = mm.mrrCols.map(mrrCol => {
       const ym = periodToYM(mrrCol);
       const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
       return { mrrCol, hcCol };
     });
+
     const rows = mm.records.filter(r => (r[cc] || '').trim());
-    rows.sort((a, b) => { const s = (a[cp]||'').localeCompare(b[cp]||''); return s !== 0 ? s : (a[cc]||'').localeCompare(b[cc]||''); });
+    rows.sort((a, b) => {
+      const s = (a[cp] || '').localeCompare(b[cp] || '');
+      return s !== 0 ? s : (a[cc] || '').localeCompare(b[cc] || '');
+    });
+
+    // Totals
     const totals = periods.map(({ mrrCol, hcCol }) => {
       let sumMrr = 0, sumHc = 0;
       for (const row of rows) {
-        const mrr = parseFloat(String(row[mrrCol]||'').replace(/[,$\s]/g,''));
+        const mrr = parseFloat(String(row[mrrCol] || '').replace(/[,$\s]/g, ''));
         if (!isNaN(mrr)) sumMrr += mrr;
-        if (hcCol) { const hc = parseFloat(String(row[hcCol]||'').replace(/[,$\s]/g,'')); if (!isNaN(hc)) sumHc += hc; }
+        if (hcCol) { const hc = parseFloat(String(row[hcCol] || '').replace(/[,$\s]/g, '')); if (!isNaN(hc)) sumHc += hc; }
       }
       return { mrr: sumMrr, hc: sumHc };
     });
+
+    // Year groups
     const yearGroups = {};
     for (const { mrrCol } of periods) {
-      const yr = (mrrCol.match(/\d{4}/)||['?'])[0];
+      const yr = (mrrCol.match(/\d{4}/) || ['?'])[0];
       if (!yearGroups[yr]) yearGroups[yr] = [];
       yearGroups[yr].push(mrrCol);
     }
     const sortedYears = Object.keys(yearGroups).sort();
     const colSpan = hasHC ? 2 : 1;
     const totalCols = 2 + periods.length * colSpan;
+
     let r1 = `<th rowspan="3">Partner</th><th rowspan="3">Client Name</th>`;
     r1 += sortedYears.map(yr => `<th colspan="${yearGroups[yr].length * colSpan}" class="th-group">${yr}</th>`).join('');
+
     const r2 = periods.map(({ mrrCol }) => {
       const abbr = mrrCol.replace(/\s*\d{4}\s*/,'').replace(/mrr/i,'').trim().slice(0,3);
       return `<th colspan="${colSpan}" class="th-sub th-month-grp">${esc(abbr)}</th>`;
     }).join('');
-    const r3 = periods.map(() => `<th class="th-sub th-mrr-month">MRR</th>${hasHC ? '<th class="th-sub th-month">HC</th>' : ''}`).join('');
+
+    const r3 = periods.map(() =>
+      `<th class="th-sub th-mrr-month">MRR</th>${hasHC ? '<th class="th-sub th-month">HC</th>' : ''}`
+    ).join('');
+
     let totalTds = `<td>TOTAL</td><td></td>`;
     for (const t of totals) {
       totalTds += `<td class="col-mrr th-mrr-month">${esc(fmtNum(t.mrr))}</td>`;
       if (hasHC) totalTds += `<td class="col-hc th-month">${esc(fmtNum(t.hc))}</td>`;
     }
+
     let html = '', lastPartner = '';
     for (const row of rows) {
-      const partner = row[cp]||'', client = row[cc]||'';
-      if (partner !== lastPartner) { html += `<tr class="group-header-partner"><td colspan="${totalCols}">▸ ${esc(partner)}</td></tr>`; lastPartner = partner; }
+      const partner = row[cp] || '', client = row[cc] || '';
+      if (partner !== lastPartner) {
+        html += `<tr class="group-header-partner"><td colspan="${totalCols}">▸ ${esc(partner)}</td></tr>`;
+        lastPartner = partner;
+      }
       let tds = `<td title="${esc(partner)}">${esc(partner)}</td><td title="${esc(client)}">${esc(client)}</td>`;
       for (const { mrrCol, hcCol } of periods) {
-        const mrr = parseFloat(String(row[mrrCol]||'').replace(/[,$\s]/g,''));
+        const mrrRaw = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+        const mrr = parseFloat(mrrRaw);
         const mrrStr = isNaN(mrr) ? '' : fmtNum(mrr);
         tds += `<td class="col-mrr th-mrr-month" title="${esc(mrrStr)}">${esc(mrrStr)}</td>`;
-        if (hasHC) { const hc = parseFloat(String(hcCol ? row[hcCol]||'' : '').replace(/[,$\s]/g,'')); tds += `<td class="col-hc th-month">${isNaN(hc)?'':esc(String(hc))}</td>`; }
+        if (hasHC) {
+          const hcRaw = hcCol ? String(row[hcCol] || '').replace(/[,$\s]/g, '') : '';
+          const hc = parseFloat(hcRaw);
+          tds += `<td class="col-hc th-month">${isNaN(hc) ? '' : esc(String(hc))}</td>`;
+        }
       }
       html += `<tr>${tds}</tr>`;
     }
+
     const omWrap = document.createElement('div');
     omWrap.className = 'table-wrap';
     omWrap.innerHTML = `<table style="width:auto;min-width:100%"><thead><tr>${r1}</tr><tr>${r2}</tr><tr>${r3}</tr></thead><tbody><tr class="om-totals-row">${totalTds}</tr>${html}</tbody></table>`;
@@ -1977,7 +2054,7 @@
         await loadMergedMovementData();
         renderMergedCompanyMovement();
       } else {
-        if (!ppm.rawData.length || !ppm.hcPeriodCols.length) await loadPPMSheetList();
+        await loadPPMSheetList();
         renderOverallMovement();
       }
     } catch (e) {
@@ -2011,16 +2088,20 @@
     for (const row of exploded) {
       const key = `${row[cp] || ''}|||${row[cc] || ''}`;
       if (!clientMap.has(key)) {
+        const clKey = (row[cc] || '').trim().toLowerCase();
+        const clEntry = ppm.clMap[clKey] || {};
         clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
-          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+          startDate:     clEntry.startDate     || '',
+          renewalDate:   clEntry.renewalDate   || '',
+          terminateDate: clEntry.terminateDate || '',
+          apps: [] });
       }
       const e = clientMap.get(key);
       if (row[ca]) e.apps.push(row[ca]);
-      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
-      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
     }
 
     // Compute per-month Total MRR and MAX HC per client
+    // If no apps were detected, fall back to a no-app lookup
     const clientRows = [];
     for (const [, e] of clientMap) {
       const appsToCheck = e.apps.length ? e.apps : [''];
@@ -2068,10 +2149,11 @@
     const sortedYears = Object.keys(yearGroups).sort();
 
     const baseCols = [
-      { key: 'partner',     label: 'Partner' },
-      { key: 'client',      label: 'Client Name' },
-      ...(csd ? [{ key: 'startDate',   label: 'Start Date' }]   : []),
-      ...(crd ? [{ key: 'renewalDate', label: 'Renewal Date' }] : []),
+      { key: 'partner',       label: 'Partner' },
+      { key: 'client',        label: 'Client Name' },
+      { key: 'startDate',     label: 'Start Date' },
+      { key: 'renewalDate',   label: 'Renewal Date' },
+      { key: 'terminateDate', label: 'Terminate Date' },
     ];
     const totalCols = baseCols.length + ppm.hcPeriodCols.length * 2;
 
@@ -2155,23 +2237,25 @@
     for (const row of exploded) {
       const key = `${row[cp] || ''}|||${row[cc] || ''}`;
       if (!clientMap.has(key)) {
+        const clKey = (row[cc] || '').trim().toLowerCase();
+        const clEntry = ppm.clMap[clKey] || {};
         clientMap.set(key, { partner: row[cp] || '', client: row[cc] || '',
-          startDate: row[csd] || '', renewalDate: row[crd] || '', apps: [] });
+          startDate:     clEntry.startDate     || '',
+          renewalDate:   clEntry.renewalDate   || '',
+          terminateDate: clEntry.terminateDate || '',
+          apps: [] });
       }
       const e = clientMap.get(key);
       if (row[ca]) e.apps.push(row[ca]);
-      if (!e.startDate   && row[csd]) e.startDate   = row[csd];
-      if (!e.renewalDate && row[crd]) e.renewalDate = row[crd];
     }
 
     // Compute per-month data per client
     const clientRows = [];
     for (const [, e] of clientMap) {
-      const appsToCheck = e.apps.length ? e.apps : [''];
       const monthData = {};
       for (const col of ppm.hcPeriodCols) {
         let totalMrr = 0, maxHc = 0, hasMrr = false, hasHc = false;
-        for (const app of appsToCheck) {
+        for (const app of e.apps) {
           const hcNum = parseFloat(lookupHC(e.client, app, col));
           if (!isNaN(hcNum) && hcNum > 0) {
             hasHc = true;
@@ -2206,9 +2290,7 @@
       return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
     }
 
-    const baseCols = ['Partner', 'Client Name',
-      ...(csd ? ['Start Date']   : []),
-      ...(crd ? ['Renewal Date'] : [])];
+    const baseCols = ['Partner', 'Client Name', 'Start Date', 'Renewal Date', 'Terminate Date'];
     const monthCols = ppm.hcPeriodCols.flatMap(col => [`${col} MRR`, `${col} HC`]);
     const csvRows = [];
 
@@ -2216,7 +2298,7 @@
     csvRows.push([...baseCols, ...monthCols].map(csvCell).join(','));
 
     // Totals row
-    const totalBase = ['TOTAL', '', ...(csd ? [''] : []), ...(crd ? [''] : [])];
+    const totalBase = ['TOTAL', '', '', '', ''];
     const totalMonth = ppm.hcPeriodCols.flatMap(col => {
       const d = totals[col];
       return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
@@ -2225,9 +2307,7 @@
 
     // Data rows
     for (const row of clientRows) {
-      const base = [row.partner, row.client,
-        ...(csd ? [row.startDate]   : []),
-        ...(crd ? [row.renewalDate] : [])];
+      const base = [row.partner, row.client, row.startDate, row.renewalDate, row.terminateDate];
       const months = ppm.hcPeriodCols.flatMap(col => {
         const d = row.monthData[col];
         return [d.mrr !== '' ? fmtNum(d.mrr) : '', d.hc !== '' ? String(d.hc) : ''];
@@ -2249,27 +2329,37 @@
 
   function downloadMergedCompanyCSV() {
     if (!mm.records.length || !mm.mrrCols.length) return;
-    function csvCell(v) { const s = String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`:`${s}`; }
+    function csvCell(v) {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    }
     const cc = mm.colClient, cp = mm.colPartner;
     const periods = mm.mrrCols.map(mrrCol => {
       const ym = periodToYM(mrrCol);
-      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year===ym.year && hym.month===ym.month; })||null) : null;
+      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
       return { mrrCol, hcCol };
     });
-    const hdrs = ['Partner','Client Name',...periods.flatMap(({mrrCol,hcCol})=>hcCol?[mrrCol,hcCol]:[mrrCol])];
-    const rows = mm.records.filter(r=>(r[cc]||'').trim())
-      .sort((a,b)=>{ const s=(a[cp]||'').localeCompare(b[cp]||''); return s!==0?s:(a[cc]||'').localeCompare(b[cc]||''); })
-      .map(row=>[row[cp]||'',row[cc]||'',...periods.flatMap(({mrrCol,hcCol})=>{
-        const mrr=String(row[mrrCol]||'').replace(/[,$\s]/g,'');
-        const hc=hcCol?String(row[hcCol]||'').replace(/[,$\s]/g,''):null;
-        return hc!==null?[mrr,hc]:[mrr];
-      })].map(csvCell).join(','));
-    const csv=[hdrs.map(csvCell).join(','),...rows].join('\n');
-    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url;
-    a.download=`merged-movement-${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    const hdrs = ['Partner', 'Client Name', ...periods.flatMap(({ mrrCol, hcCol }) => hcCol ? [mrrCol, hcCol] : [mrrCol])];
+    const rows = mm.records.filter(r => (r[cc] || '').trim())
+      .sort((a, b) => { const s = (a[cp]||'').localeCompare(b[cp]||''); return s !== 0 ? s : (a[cc]||'').localeCompare(b[cc]||''); })
+      .map(row => [
+        row[cp] || '', row[cc] || '',
+        ...periods.flatMap(({ mrrCol, hcCol }) => {
+          const mrr = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+          const hc  = hcCol ? String(row[hcCol] || '').replace(/[,$\s]/g, '') : null;
+          return hc !== null ? [mrr, hc] : [mrr];
+        })
+      ].map(csvCell).join(','));
+    const csv = [hdrs.map(csvCell).join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `merged-movement-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ── SaaS Metrics Movement ──
@@ -2293,47 +2383,87 @@
     const allMonthCols = headers.filter(isMonthCol);
     const mrrCols = allMonthCols.filter(h => /mrr/i.test(h));
     const hcCols  = allMonthCols.filter(h => /\bhc\b/i.test(h));
-    mm.mrrCols    = (mrrCols.length ? mrrCols : allMonthCols.filter(h => !/\bhc\b/i.test(h))).sort((a,b) => parsePeriod(a)-parsePeriod(b));
-    mm.hcCols     = hcCols.sort((a,b) => parsePeriod(a)-parsePeriod(b));
-    mm.periodCols = mm.mrrCols;
+    mm.mrrCols    = (mrrCols.length ? mrrCols : allMonthCols.filter(h => !/\bhc\b/i.test(h)))
+      .sort((a, b) => parsePeriod(a) - parsePeriod(b));
+    mm.hcCols     = hcCols.sort((a, b) => parsePeriod(a) - parsePeriod(b));
+    mm.periodCols = mm.mrrCols; // used by SaaS Metrics computation
     mm.records    = records;
   }
 
   function computeMergedMetrics() {
     if (!mm.records.length || !mm.periodCols.length) return null;
-    const cp = mm.colPartner, cc = mm.colClient;
-    const clientList = mm.records.filter(row => (row[cc]||'').trim()).map(row => {
-      const mrrByPeriod = {};
-      for (const col of mm.periodCols) {
-        const v = parseFloat(String(row[col]||'').replace(/[,$\s]/g,''));
-        mrrByPeriod[col] = isNaN(v)||v<0 ? 0 : v;
-      }
-      return { partner: row[cp]||'', client: row[cc]||'', mrrByPeriod };
+    const cp = mm.colPartner;
+    const cc = mm.colClient;
+
+    // Pair each MRR period col with its matching HC col (same year+month)
+    const hasHC = mm.hcCols.length > 0;
+    const periodPairs = mm.periodCols.map(mrrCol => {
+      const ym = periodToYM(mrrCol);
+      const hcCol = ym ? (mm.hcCols.find(h => { const hym = periodToYM(h); return hym && hym.year === ym.year && hym.month === ym.month; }) || null) : null;
+      return { mrrCol, hcCol };
     });
+
+    const clientList = mm.records
+      .filter(row => (row[cc] || '').trim())
+      .map(row => {
+        const mrrByPeriod = {}, hcByPeriod = {};
+        for (const { mrrCol, hcCol } of periodPairs) {
+          const mrrRaw = String(row[mrrCol] || '').replace(/[,$\s]/g, '');
+          const mrr = parseFloat(mrrRaw);
+          mrrByPeriod[mrrCol] = isNaN(mrr) || mrr < 0 ? 0 : mrr;
+          if (hcCol) {
+            const hcRaw = String(row[hcCol] || '').replace(/[,$\s]/g, '');
+            const hc = parseFloat(hcRaw);
+            hcByPeriod[mrrCol] = isNaN(hc) || hc < 0 ? 0 : hc;
+          }
+        }
+        return { partner: row[cp] || '', client: row[cc] || '', mrrByPeriod, hcByPeriod };
+      });
+
     const allPeriods = mm.periodCols;
     let startIdx = 1;
-    const julyIdx = allPeriods.findIndex(p => { const ym=periodToYM(p); return ym&&ym.year===2024&&ym.month===6; });
+    const julyIdx = allPeriods.findIndex(p => { const ym = periodToYM(p); return ym && ym.year === 2024 && ym.month === 6; });
     if (julyIdx >= 0) startIdx = julyIdx + 1;
     if (startIdx >= allPeriods.length) startIdx = 1;
     const displayPeriods = allPeriods.slice(startIdx);
-    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+
+    const metricsPerPeriod = [];
+    let prevEndingMrr = null, prevEndingClients = null;
+    for (let i = 0; i < displayPeriods.length; i++) {
+      const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
-      let beginningMrr=0, newBusiness=0, expansion=0, contraction=0, lostClients=0;
+      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
       for (const client of clientList) {
-        const mrrCurr = client.mrrByPeriod[currPeriod]||0;
-        const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod]||0) : 0;
-        beginningMrr += mrrPrev;
-        const wasActive = mrrPrev>0, isActive = mrrCurr>0;
-        if (wasActive&&!isActive)         lostClients += mrrPrev;
-        else if (!wasActive&&isActive)    newBusiness += mrrCurr;
-        else if (wasActive&&isActive) {
-          if (mrrCurr>mrrPrev)            expansion   += mrrCurr-mrrPrev;
-          else if (mrrCurr<mrrPrev)       contraction += mrrPrev-mrrCurr;
+        const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
+        const mrrPrev = prevPeriod ? (client.mrrByPeriod[prevPeriod] || 0) : 0;
+        rawBeginning += mrrPrev;
+        // Use HC > 0 for active status if HC columns exist, otherwise fall back to MRR > 0
+        const hcCurr = hasHC ? (client.hcByPeriod[currPeriod] || 0) : mrrCurr;
+        const hcPrev = hasHC ? (prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0) : mrrPrev;
+        const wasActive = hcPrev > 0;
+        const isActive  = hcCurr > 0;
+        if (wasActive) rawBeginningClients++;
+        if (wasActive && !isActive)        { lostClients += mrrPrev; lostClientCount++; }
+        else if (!wasActive && isActive)   { newBusiness += mrrCurr; newClients++; }
+        else if (wasActive && isActive) {
+          if (mrrCurr > mrrPrev)             expansion   += mrrCurr - mrrPrev;
+          else if (mrrCurr < mrrPrev)        contraction += mrrPrev - mrrCurr;
         }
       }
-      return { period:currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
-               endingMrr: beginningMrr+newBusiness+expansion-contraction-lostClients };
-    });
+      // Chain: beginning = previous ending (first period uses raw)
+      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
+      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
+      prevEndingMrr = endingMrr;
+
+      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
+      const endingClients = beginningClients + newClients - lostClientCount;
+      prevEndingClients = endingClients;
+
+      metricsPerPeriod.push({ period: currPeriod, beginningMrr, newBusiness, expansion, contraction, lostClients,
+               endingMrr, beginningClients, newClients, lostClientCount, endingClients });
+    }
+
     return { displayPeriods, metricsPerPeriod };
   }
 
@@ -2439,10 +2569,14 @@
 
     const displayPeriods = allPeriods.slice(startIdx);
 
-    const metricsPerPeriod = displayPeriods.map((currPeriod, i) => {
+    const metricsPerPeriod = [];
+    let prevEndingMrr = null, prevEndingClients = null;
+    for (let i = 0; i < displayPeriods.length; i++) {
+      const currPeriod = displayPeriods[i];
       const prevPeriod = allPeriods[startIdx + i - 1];
 
-      let beginningMrr = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginning = 0, newBusiness = 0, expansion = 0, contraction = 0, lostClients = 0;
+      let rawBeginningClients = 0, newClients = 0, lostClientCount = 0;
 
       for (const client of clientList) {
         const mrrCurr = client.mrrByPeriod[currPeriod] || 0;
@@ -2450,19 +2584,18 @@
         const hcCurr  = client.hcByPeriod[currPeriod] || 0;
         const hcPrev  = prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0;
 
-        beginningMrr += mrrPrev;
+        rawBeginning += mrrPrev;
 
         const wasActive = hcPrev > 0;
         const isActive  = hcCurr > 0;
 
-        // Lost: was active last period, HC dropped to 0 this period
-        const isLost = wasActive && !isActive;
+        if (wasActive) rawBeginningClients++;
 
-        // New business: had no HC activity last period, has it now
-        const isNew = !wasActive && isActive;
+        const isLost = wasActive && !isActive;
+        const isNew  = !wasActive && isActive;
 
         if (isLost) {
-          // Use last known non-zero MRR
+          lostClientCount++;
           let lastMrr = mrrPrev;
           if (!lastMrr) {
             for (let j = startIdx + i - 2; j >= 0; j--) {
@@ -2472,6 +2605,7 @@
           }
           lostClients += lastMrr;
         } else if (isNew && isActive) {
+          newClients++;
           newBusiness += mrrCurr;
         } else if (wasActive && isActive) {
           if (mrrCurr > mrrPrev) expansion  += mrrCurr - mrrPrev;
@@ -2479,13 +2613,22 @@
         }
       }
 
-      return {
+      // Chain: beginning = previous ending (first period uses raw)
+      const beginningMrr = prevEndingMrr !== null ? prevEndingMrr : rawBeginning;
+      const endingMrr = beginningMrr + newBusiness + expansion - contraction - lostClients;
+      prevEndingMrr = endingMrr;
+
+      const beginningClients = prevEndingClients !== null ? prevEndingClients : rawBeginningClients;
+      const endingClients = beginningClients + newClients - lostClientCount;
+      prevEndingClients = endingClients;
+
+      metricsPerPeriod.push({
         period: currPeriod,
         beginningMrr, newBusiness,
         expansion, contraction, lostClients,
-        endingMrr: beginningMrr + newBusiness + expansion - contraction - lostClients
-      };
-    });
+        endingMrr, beginningClients, newClients, lostClientCount, endingClients
+      });
+    }
 
     return { displayPeriods, metricsPerPeriod };
   }
@@ -2523,7 +2666,7 @@
 
     const result = smActiveTab === 'merged' ? computeMergedMetrics() : computeSaasMetrics();
     if (!result || !result.displayPeriods.length) {
-      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Not enough periods to compute metrics. Ensure the HC sheet covers at least 2 periods including July 2024.</p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Not enough periods to compute metrics. Ensure the sheet covers at least 2 month columns.</p></div>';
       document.getElementById('sm-stats-bar').innerHTML = '';
       return;
     }
@@ -2568,15 +2711,21 @@
     }).join('');
 
     const metrics = [
-      { key: 'beginningMrr', label: 'Beginning MRR',  cls: 'sm-row-beginning' },
-      { key: 'newBusiness',  label: '+ New Business',  cls: 'sm-row-new'       },
-      { key: 'upsell',       label: '+ Upsell',        cls: 'sm-row-upsell'    },
+      { key: 'beginningMrr',    label: 'Beginning MRR',       cls: 'sm-row-beginning'   },
+      { key: 'newBusiness',     label: '+ New Business',       cls: 'sm-row-new'         },
+      { key: 'upsell',          label: '+ Upsell',             cls: 'sm-row-upsell'      },
       { key: '__div__' },
-      { key: 'contraction',  label: '− Contraction',   cls: 'sm-row-contraction', negate: true },
-      { key: 'expansion',    label: '+ Expansion',     cls: 'sm-row-expansion'    },
-      { key: 'lostClients',  label: '− Lost Clients',  cls: 'sm-row-lost',        negate: true },
+      { key: 'contraction',     label: '− Contraction',        cls: 'sm-row-contraction', negate: true },
+      { key: 'expansion',       label: '+ Expansion',          cls: 'sm-row-expansion'   },
+      { key: 'lostClients',     label: '− Lost Clients',       cls: 'sm-row-lost',        negate: true },
       { key: '__div__' },
-      { key: 'endingMrr',    label: 'Ending MRR',      cls: 'sm-row-ending'       },
+      { key: 'endingMrr',       label: 'Ending MRR',           cls: 'sm-row-ending'      },
+      { key: '__div__' },
+      { key: 'beginningClients', label: 'Beginning No. of Clients', cls: 'sm-row-beginning', isCount: true },
+      { key: 'newClients',       label: '+ New Clients',            cls: 'sm-row-new',        isCount: true },
+      { key: 'lostClientCount',  label: '− Lost Clients',           cls: 'sm-row-lost',       isCount: true, negate: true },
+      { key: '__div__' },
+      { key: 'endingClients',    label: 'Ending No. of Clients',    cls: 'sm-row-ending',     isCount: true },
     ];
 
     let bodyHtml = '';
@@ -2590,7 +2739,9 @@
       for (const mp of metricsPerPeriod) {
         if (isUpsell) { tds += `<td class="sm-val">—</td>`; continue; }
         const raw = mp[m.key];
-        const display = m.negate ? `(${fmtC(raw)})` : fmtC(raw);
+        const display = m.isCount
+          ? (m.negate ? `(${raw})` : String(raw))
+          : (m.negate ? `(${fmtC(raw)})` : fmtC(raw));
         tds += `<td class="sm-val">${esc(display)}</td>`;
       }
       bodyHtml += `<tr class="${m.cls}">${tds}</tr>`;
@@ -2627,13 +2778,18 @@
 
     const header = ['Metric', ...displayPeriods].map(csvCell).join(',');
     const rows = [
-      ['Beginning MRR', ...metricsPerPeriod.map(m => m.beginningMrr.toFixed(2))],
-      ['New Business',  ...metricsPerPeriod.map(m => m.newBusiness.toFixed(2))],
-      ['Upsell',        ...metricsPerPeriod.map(() => '')],
-      ['Contraction',   ...metricsPerPeriod.map(m => (-m.contraction).toFixed(2))],
-      ['Expansion',     ...metricsPerPeriod.map(m => m.expansion.toFixed(2))],
-      ['Lost Clients',  ...metricsPerPeriod.map(m => (-m.lostClients).toFixed(2))],
-      ['Ending MRR',    ...metricsPerPeriod.map(m => m.endingMrr.toFixed(2))],
+      ['Beginning MRR',            ...metricsPerPeriod.map(m => m.beginningMrr.toFixed(2))],
+      ['New Business',             ...metricsPerPeriod.map(m => m.newBusiness.toFixed(2))],
+      ['Upsell',                   ...metricsPerPeriod.map(() => '')],
+      ['Contraction',              ...metricsPerPeriod.map(m => (-m.contraction).toFixed(2))],
+      ['Expansion',                ...metricsPerPeriod.map(m => m.expansion.toFixed(2))],
+      ['Lost Clients',             ...metricsPerPeriod.map(m => (-m.lostClients).toFixed(2))],
+      ['Ending MRR',               ...metricsPerPeriod.map(m => m.endingMrr.toFixed(2))],
+      [],
+      ['Beginning No. of Clients', ...metricsPerPeriod.map(m => m.beginningClients)],
+      ['New Clients',              ...metricsPerPeriod.map(m => m.newClients)],
+      ['Lost Clients (Count)',      ...metricsPerPeriod.map(m => -m.lostClientCount)],
+      ['Ending No. of Clients',    ...metricsPerPeriod.map(m => m.endingClients)],
     ].map(r => r.map(csvCell).join(','));
 
     const csv = [header, ...rows].join('\n');
@@ -2653,7 +2809,21 @@
   }
 
   // ── Init ──
-  // App stays hidden behind the login screen until signIn() completes.
+  (async () => {
+    try { state.settings = await apiFetch('/api/settings'); } catch {}
+    refreshDashboard();
+    // Show logged-in user in topbar
+    try {
+      const me = await apiFetch('/api/me');
+      if (me && me.email) {
+        const wrap = document.getElementById('user-info');
+        document.getElementById('user-name').textContent = me.name || me.email;
+        const avatar = document.getElementById('user-avatar');
+        if (me.picture) { avatar.src = me.picture; avatar.style.display = ''; }
+        wrap.style.display = 'flex';
+      }
+    } catch {}
+  })();
 </script>
 </body>
 </html>
