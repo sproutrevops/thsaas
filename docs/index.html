@@ -2441,8 +2441,8 @@
         rawEnding    += mrrCurr;
         const hcCurr = hasHC ? (client.hcByPeriod[currPeriod] || 0) : mrrCurr;
         const hcPrev = hasHC ? (prevPeriod ? (client.hcByPeriod[prevPeriod] || 0) : 0) : mrrPrev;
-        const wasActive = hcPrev > 0 || mrrPrev > 0;
-        const isActive  = hcCurr > 0 || mrrCurr > 0;
+        const wasActive = hcPrev > 0;
+        const isActive  = hcCurr > 0;
         if (wasActive) rawBeginningClients++;
         if (wasActive && !isActive)        { lostClients += mrrPrev; lostClientCount++; }
         else if (!wasActive && isActive)   { newBusiness += mrrCurr; newClients++; }
@@ -2587,8 +2587,8 @@
         rawBeginning += mrrPrev;
         rawEnding    += mrrCurr;
 
-        const wasActive = hcPrev > 0 || mrrPrev > 0;
-        const isActive  = hcCurr > 0 || mrrCurr > 0;
+        const wasActive = hcPrev > 0;
+        const isActive  = hcCurr > 0;
 
         if (wasActive) rawBeginningClients++;
 
